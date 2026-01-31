@@ -4,6 +4,6 @@
     "scripts": {
         "build": "echo 'build hot'",
         "lint": "echo 'lint hot'",
-        "test": "echo 'test hot'"
+        "test": "bun test"
     }
 }
