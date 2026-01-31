@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  # Phase 3 implementation
+  paxel:
+    image: alpine:latest # Placeholder
+    command: echo "PAXEL Placeholder"

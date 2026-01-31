@@ -1,0 +1,9 @@
+{
+    "name": "@hotpaxel/tiptex-web",
+    "version": "0.0.0",
+    "scripts": {
+        "build": "echo 'build tiptex-web'",
+        "lint": "echo 'lint tiptex-web'",
+        "test": "echo 'test tiptex-web'"
+    }
+}

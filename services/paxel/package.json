@@ -1,0 +1,9 @@
+{
+    "name": "@hotpaxel/paxel",
+    "version": "0.0.0",
+    "scripts": {
+        "build": "echo 'build paxel'",
+        "lint": "echo 'lint paxel'",
+        "test": "echo 'test paxel'"
+    }
+}
