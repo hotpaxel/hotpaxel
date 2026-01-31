@@ -1,7 +1,9 @@
 class HotManager {
   constructor() {
-    this.currentTex = "\\documentclass{article}\\begin{document}\\end{document}";
-    this.lastValidTex = this.currentTex;
+    this.defaultTex = "\\documentclass{article}\\begin{document}\\end{document}";
+    // currentTex represents the latest successful conversion output.
+    this.currentTex = this.defaultTex;
+    this.lastValidTex = this.defaultTex;
     this.failureState = {
       hasFailure: false,
       error: null,
@@ -14,13 +16,15 @@ class HotManager {
   }
 
   async load(tex) {
-    this.currentTex = tex;
-    this.lastValidTex = tex;
+    const nextTex =
+      typeof tex === "string" && tex.trim().length > 0 ? tex : this.defaultTex;
+    this.currentTex = nextTex;
+    this.lastValidTex = nextTex;
     this.failureState = {
       hasFailure: false,
       error: null,
     };
-    return `<pre>${escapeHtml(tex)}</pre>`;
+    return `<pre>${escapeHtml(nextTex)}</pre>`;
   }
 
   async update(html) {
@@ -50,6 +54,13 @@ class HotManager {
     return this.lastValidTex;
   }
 
+  getFailureState() {
+    return {
+      hasFailure: this.failureState.hasFailure,
+      error: this.failureState.error ? { ...this.failureState.error } : null,
+    };
+  }
+
   async renderPdf(paxelUrl, opts = {}) {
     return {
       status: "stub",
@@ -66,7 +77,8 @@ class HotManager {
     if (html.includes("__FAIL__")) {
       throw new Error("Stub conversion failure");
     }
-    return `\\begin{document}${html}\\end{document}`;
+    const safeText = escapeLatex(html);
+    return `\\documentclass{article}\\begin{document}${safeText}\\end{document}`;
   }
 }
 
@@ -75,6 +87,21 @@ const escapeHtml = (value) =>
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+
+const escapeLatex = (value) =>
+  value
+    .replaceAll("\\", "\\textbackslash{}")
+    .replaceAll("{", "\\{")
+    .replaceAll("}", "\\}")
+    .replaceAll("%", "\\%")
+    .replaceAll("$", "\\$")
+    .replaceAll("#", "\\#")
+    .replaceAll("&", "\\&")
+    .replaceAll("_", "\\_")
+    .replaceAll("^", "\\^{}")
+    .replaceAll("~", "\\~{}")
+    .replaceAll("<", "\\textless{}")
+    .replaceAll(">", "\\textgreater{}");
 
 module.exports = {
   HotManager,

@@ -8,7 +8,10 @@ describe("FailureState handling", () => {
     await hot.load("\\begin{document}start\\end{document}");
     await hot.update("<p>ok</p>");
 
-    expect(hot.getTex()).toBe("\\begin{document}<p>ok</p>\\end{document}");
+    expect(hot.getTex()).toBe(
+      "\\documentclass{article}\\begin{document}\\textless{}p\\textgreater{}ok\\textless{}/p\\textgreater{}\\end{document}",
+    );
+    expect(hot.getFailureState()).toEqual({ hasFailure: false, error: null });
   });
 
   it("preserves last valid TeX on conversion failure", async () => {
@@ -18,6 +21,7 @@ describe("FailureState handling", () => {
     await hot.update("__FAIL__");
 
     expect(hot.getTex()).toBe("\\begin{document}safe\\end{document}");
+    expect(hot.getFailureState().hasFailure).toBe(true);
   });
 
   it("never throws when getting TeX", async () => {
