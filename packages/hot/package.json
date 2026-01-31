@@ -1,9 +1,13 @@
 {
-    "name": "@hotpaxel/hot",
-    "version": "0.0.0",
-    "scripts": {
-        "build": "echo 'build hot'",
-        "lint": "echo 'lint hot'",
-        "test": "echo 'test hot'"
-    }
+  "name": "@hotpaxel/hot",
+  "version": "0.0.0",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "build": "echo 'build hot'",
+    "lint": "echo 'lint hot'",
+    "test": "echo 'test hot'"
+  }
 }
