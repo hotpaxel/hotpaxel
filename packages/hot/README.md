@@ -23,3 +23,4 @@ console.log(tex);
 
 - `renderPdf` is a stub in Phase 1 and will be wired to PAXEL later.
 - Conversion logic and failure handling will be implemented in subsequent phases.
+- `update()` does not perform HTML-to-TeX conversion yet (Phase 1 stub).

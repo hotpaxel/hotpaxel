@@ -1,6 +1,6 @@
 class HotManager {
   constructor() {
-    this.currentTex = "";
+    this.currentTex = "\\documentclass{article}\\begin{document}\\end{document}";
     this.lastHtml = "";
   }
 
@@ -10,7 +10,7 @@ class HotManager {
 
   async load(tex) {
     this.currentTex = tex;
-    return this.currentTex;
+    return `<pre>${escapeHtml(tex)}</pre>`;
   }
 
   async update(html) {
@@ -29,6 +29,12 @@ class HotManager {
     };
   }
 }
+
+const escapeHtml = (value) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 
 module.exports = {
   HotManager,
