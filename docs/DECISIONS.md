@@ -24,3 +24,10 @@
 - Date: 2026-01-31
 - Status: Accepted
 - Decision: UI implementation may be outsourced, but API/HTML contract and architecture decisions remain internal and immutable without CTO approval.
+
+## D-0006: Lockfile Format
+- Date: 2026-01-31
+- Status: Accepted
+- Decision: Use text-based **`bun.lock`** (default in Bun v1.2+) instead of binary `bun.lockb`.
+- Context: Provides better git diff visibility and merge conflict resolution.
+

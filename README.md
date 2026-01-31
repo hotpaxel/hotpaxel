@@ -31,3 +31,8 @@ HOTPAXEL is a document generation product where **the source of truth is TeX** w
 - Spec is Law: `docs/ARCHITECTURE.md`
 - Phase 4 UI work requires `docs/UI_CONTRACT.md` freeze first.
 - Outsourcing is allowed for UI implementation only; architecture/contract decisions remain internal.
+
+## Engineering Context
+
+- **Architecture Guide**: `docs/ENGINEERING_GUIDE.md` (Team understanding & onboarding)
+
