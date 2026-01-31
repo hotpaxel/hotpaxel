@@ -1,0 +1,25 @@
+\documentclass{article}
+\begin{document}
+
+% Logic Chip Protection Test Vectors
+
+% 1. Jinja2-style Logic Tokens
+{% if is_valid %}
+  This content is visible if valid.
+{% endif %}
+
+{% for party in parties %}
+  Party Name: {{ party.name }}
+{% endfor %}
+
+Variable interpolation: {{ contract_date }}
+
+% 2. Custom TeX Commands for Contracts
+\Party{Tenant}{John Doe}
+\ClauseRef{clause:termination}
+\SignBox{Landlord}{Signature Here}
+
+% Metadata command
+\makyesignmeta
+
+\end{document}
