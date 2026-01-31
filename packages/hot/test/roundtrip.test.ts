@@ -1,4 +1,4 @@
-import { describe, it, expect, test } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -10,12 +10,13 @@ describe("Round-trip Vectors", () => {
     const content = readFileSync(logicTexPath, "utf-8");
     expect(content).toBeString();
     expect(content).toContain("\\makyesignmeta");
-    expect(content).toContain("{% if is_valid %}");
+    // Ensure the Jinja2 tokens are wrapped in comments as per spec
+    expect(content).toContain("%% {% if is_valid %}");
   });
 
-  // This test is the scaffold for Phase 2 implementation.
-  // It is currently skipped because the logic chip protection is not yet implemented.
-  test.skip("should round-trip logic.tex with exact string equality", async () => {
+  // TODO(Phase 2): This test MUST be enabled and passing before Phase 4 (UI Contract Freeze).
+  // Currently skipped as logic chip protection (Lua filters) is not yet implemented.
+  it.skip("should round-trip logic.tex with exact string equality", async () => {
     const input = readFileSync(logicTexPath, "utf-8");
 
     // TODO: Implement actual conversion logic here
