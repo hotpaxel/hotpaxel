@@ -1,24 +1,16 @@
 import { describe, it, expect, beforeAll } from "bun:test";
 import { join } from "node:path";
+import { detectPandoc, warnPandocMissing } from "./pandoc";
 
 describe("[GATE] Lua Filter Preservation", () => {
   const luaFilterPath = join(import.meta.dir, "../src/lua/html-to-tex.lua");
   let hasPandoc = false;
 
   beforeAll(async () => {
-    try {
-      const proc = Bun.spawn(["pandoc", "--version"], {
-        stderr: "ignore",
-        stdout: "ignore",
-      });
-      const exitCode = await proc.exited;
-      hasPandoc = exitCode === 0;
-    } catch (e) {
-      hasPandoc = false;
-    }
+    hasPandoc = await detectPandoc();
 
     if (!hasPandoc) {
-      console.warn("Pandoc not found. Install pandoc to enable Phase 2 Gate tests.");
+      warnPandocMissing("Phase 2 Gate");
     }
   });
 
