@@ -18,7 +18,8 @@ function Span(elem)
     return nil
   end
 
-  local raw_tex = elem.attributes["data-raw"]
+  -- Pandoc strips "data-" prefix from HTML attributes
+  local raw_tex = elem.attributes["data-raw"] or elem.attributes["raw"]
 
   if raw_tex then
     -- Contract: If data-raw exists, it is the Single Source of Truth for this span.
@@ -26,8 +27,7 @@ function Span(elem)
     return pandoc.RawInline("tex", raw_tex)
   else
     -- Fallback: If data-raw is missing, pass through.
-    -- This treats the content as normal text (escaped by Pandoc).
-    -- This is a "Fail-Open" strategy.
-    return nil
+    -- We return the content (inlines) to effectively "unwrap" the span.
+    return elem.content
   end
 end

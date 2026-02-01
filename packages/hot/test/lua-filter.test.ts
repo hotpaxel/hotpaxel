@@ -79,7 +79,8 @@ describe("[GATE] Lua Filter Preservation", () => {
     const input = `<span class="not-hot-protect" data-raw="HIDDEN">Visible</span>`;
     const output = await runPandoc(input);
 
-    expect(output.trim()).toBe("Visible");
+    // Pandoc wraps spans with classes in braces by default in LaTeX
+    expect(output.trim()).toBe("{Visible}");
     expect(output).not.toContain("HIDDEN");
   });
 
