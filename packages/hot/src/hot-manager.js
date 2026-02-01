@@ -90,7 +90,6 @@ const escapeHtml = (value) =>
 
 const escapeLatex = (value) =>
   value
-    .replaceAll("\\", "\\textbackslash{}")
     .replaceAll("{", "\\{")
     .replaceAll("}", "\\}")
     .replaceAll("%", "\\%")
@@ -101,7 +100,8 @@ const escapeLatex = (value) =>
     .replaceAll("^", "\\^{}")
     .replaceAll("~", "\\~{}")
     .replaceAll("<", "\\textless{}")
-    .replaceAll(">", "\\textgreater{}");
+    .replaceAll(">", "\\textgreater{}")
+    .replaceAll("\\", "\\textbackslash{}");
 
 module.exports = {
   HotManager,
