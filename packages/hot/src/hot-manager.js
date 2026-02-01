@@ -1,4 +1,4 @@
-const { createStubConverter } = require("./converter");
+const { createLuaFilterConverter } = require("./converter");
 
 class HotManager {
   constructor({ converter } = {}) {
@@ -11,7 +11,7 @@ class HotManager {
       error: null,
     };
     this.lastHtml = "";
-    this.converter = converter ?? createStubConverter();
+    this.converter = converter ?? createLuaFilterConverter();
   }
 
   async init() {

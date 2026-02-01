@@ -21,7 +21,7 @@ console.log(tex);
 
 ## Converter interface
 
-HOT accepts a converter implementation so we can plug in pandoc + Lua filters later.
+HOT accepts a converter implementation so we can plug in pandoc + Lua filters.
 Pass an object with `texToHtml` and `htmlToTex` async methods when constructing `HotManager`.
 
 ```js
@@ -39,10 +39,16 @@ const hot = new HotManager({ converter });
 
 ### Pandoc/Lua hook point
 
-Implement the converter methods by calling pandoc with the Jules Lua filter chain.
-This keeps HOT stable while swapping conversion engines without changing its public API.
+By default, HOT uses an internal converter that:
+
+* Wraps logic chips in `<span class="hot-protect" data-raw="...">` per the Lua contract.
+* Round-trips HTML produced by HOT without pandoc by extracting the protected `data-raw`.
+* Uses pandoc + the Jules Lua filter (`src/lua/html-to-tex.lua`) when pandoc is available.
+* Falls back to the legacy escape-based stub when pandoc is unavailable and the HTML is not HOT-produced.
+
+See the Lua filter contract and known limits in [`src/lua/README.md`](./src/lua/README.md).
 
 ## Notes
 
 - `renderPdf` is a stub in Phase 1 and will be wired to PAXEL later.
-- Conversion logic is pluggable via the converter interface; default behavior is a stub.
+- Conversion logic is pluggable via the converter interface; default behavior uses the Lua-aware converter.
