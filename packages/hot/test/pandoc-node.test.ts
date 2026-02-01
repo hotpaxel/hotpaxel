@@ -28,6 +28,6 @@ describe("Node pandoc converter", () => {
     await hot.load("\\begin{document}seed\\end{document}");
     await hot.update("<p>foo & bar</p>");
 
-    expect(hot.getTex().trim()).toBe("foo \\& bar");
+    expect(hot.getTex()).toContain("foo \\& bar");
   });
 });

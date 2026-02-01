@@ -52,6 +52,7 @@ See the Lua filter contract and known limits in [`src/lua/README.md`](./src/lua/
 
 * Browser bundlers should resolve `@hotpaxel/hot` to the browser-safe entry.
 * Node usage with pandoc available can import `@hotpaxel/hot/node` explicitly.
+* Browser environments must use a bundler/runtime that respects the `browser` export condition to avoid Node-only dependencies.
 
 #### Known limitations
 

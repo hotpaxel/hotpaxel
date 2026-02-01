@@ -6,7 +6,7 @@
     ".": {
       "browser": "./src/index.browser.js",
       "node": "./src/index.node.js",
-      "default": "./src/index.js"
+      "default": "./src/index.node.js"
     },
     "./node": "./src/index.node.js"
   },
