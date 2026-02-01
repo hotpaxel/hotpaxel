@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "dev": "tsx watch src/index.ts",
-        "build": "tsc",
+        "build": "bun build src/index.ts --target node --outfile dist/index.js --packages bundle",
         "start": "node dist/index.js",
         "lint": "tsc --noEmit",
         "test": "vitest"

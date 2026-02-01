@@ -3,5 +3,15 @@ version: '3.8'
 services:
   # Phase 3 implementation
   paxel:
-    image: alpine:latest # Placeholder
-    command: echo "PAXEL Placeholder"
+    build:
+      context: .
+      dockerfile: services/paxel/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - PORT=8888
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G

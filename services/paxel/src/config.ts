@@ -1,5 +1,5 @@
 export const CONFIG = {
-    PORT: process.env.PORT ? parseInt(process.env.PORT) : 3000,
+    PORT: process.env.PORT ? parseInt(process.env.PORT) : 8888,
     /** Max concurrent compilations (XeLaTeX is CPU heavy) */
     MAX_CONCURRENT_JOBS: process.env.MAX_CONCURRENT_JOBS ? parseInt(process.env.MAX_CONCURRENT_JOBS) : 2,
     /** Max Pending + Active jobs. If exceeded, return 429. */

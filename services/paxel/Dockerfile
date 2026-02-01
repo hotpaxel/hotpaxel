@@ -1,43 +1,56 @@
-# Base Image
-FROM node:20-bookworm
+# Stage 1: Builder (Bun)
+# We use Bun to install dependencies and build the TypeScript code efficiently.
+FROM oven/bun:1-debian AS builder
+
+WORKDIR /app
+
+# Copy configuration files
+# We copy the lockfile and workspace definitions to ensure reproducible builds
+COPY package.json turbo.json bun.lock ./
+
+# Copy workspace packages to satisfy lockfile references
+# This prevents "missing workspace" errors during install and ensures frozen lockfile works
+COPY apps apps
+COPY packages packages
+COPY services services
+
+# Install dependencies (frozen lockfile for reproducibility)
+RUN bun install --frozen-lockfile
+
+# Build the service
+WORKDIR /app/services/paxel
+RUN bun run build
+
+
+# Stage 2: Runtime (Node.js + XeLaTeX)
+FROM node:20-bookworm-slim AS runner
 
 # 1. Install XeLaTeX and Dependencies
-# texlive-xetex: The engine
-# texlive-lang-korean: For KoTeX support
-# fonts-nanum: Korean fonts
-# --no-install-recommends: Keep image size smaller
+# Added latex-extra and recommended for broader document support as per Review.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-xetex \
     texlive-lang-korean \
+    texlive-latex-recommended \
+    texlive-latex-extra \
     fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Setup App
+# 2. Setup App Directory
 WORKDIR /app
 
 # 3. Create non-root user
-# Node image comes with 'node' user (uid 1000). We just ensure perms.
 RUN chown node:node /app
 
-# 4. Copy Code
-COPY --chown=node:node package.json .
-COPY --chown=node:node tsconfig.json .
-# Assuming 'npm install' or 'bun install' happens before build or here.
-# Since we are in a monorepo context usually, dependencies might be tricky if not bundled.
-# But "Single Dockerfile under services/paxel/" suggests it should be standalone-buildable or context-aware.
-# We will assume standalone build capability for simplicity, OR copy node_modules if we run from root.
-# Standard pattern: Install dependencies inside docker.
-RUN npm install
+# 4. Copy built artifacts from Builder Stage
+# We only need the bundled JS file.
+# The bundle includes all dependencies (hono, execa, etc.), so NO npm install is needed.
+COPY --from=builder --chown=node:node /app/services/paxel/dist/index.js ./dist/index.js
 
-COPY --chown=node:node src ./src
-
-# 5. Build
-RUN npm run build
-
-# 6. Runtime Config
+# 5. Runtime Config
 USER node
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=8888
+ENV NODE_ENV=production
+EXPOSE 8888
 
-# 7. Start
-CMD ["npm", "start"]
+# 6. Start
+CMD ["node", "dist/index.js"]
