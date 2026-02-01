@@ -3,6 +3,7 @@
 -- It only unwraps data-raw verbatim to guarantee byte-level equality.
 
 function has_class(elem, cls)
+  if not elem.classes then return false end
   for _, c in ipairs(elem.classes) do
     if c == cls then
       return true

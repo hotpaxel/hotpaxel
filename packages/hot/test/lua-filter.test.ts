@@ -56,6 +56,8 @@ describe("[GATE] Lua Filter Preservation", () => {
     const output = await runPandoc(input);
 
     // Pandoc latex output for <p> usually adds newlines.
+    // NOTE: We use trim() here because Pandoc often appends a trailing newline to the document.
+    // The strict byte-level preservation of the token itself is verified in the "whitespace preservation" test below.
     expect(output.trim()).toBe(`Start %% {% if x %} End`);
   });
 
@@ -96,10 +98,8 @@ describe("[GATE] Lua Filter Preservation", () => {
     const input = `<span class="hot-protect" data-raw="${raw}">Content</span>`;
     const output = await runPandoc(input);
 
-    // With -t latex, pandoc often outputs the raw inline.
-    // If input is <span ...>...</span> (without <p>), output might not have newlines depending on context.
-    // But since runPandoc sends raw html, pandoc treats it as part of document.
-    // Let's check containment to be safe against pandoc wrapping logic, but strict enough on the token.
+    // We expect the output to contain the raw string exactly.
+    // This verifies that the Lua filter does NOT trim or normalize the content of data-raw.
     expect(output).toContain(raw);
   });
 });
