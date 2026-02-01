@@ -1,23 +1,15 @@
 import { beforeAll, describe, expect, it } from "bun:test";
 import { HotManager } from "../src/index.node";
+import { detectPandoc, warnPandocMissing } from "./pandoc";
 
 describe("Node pandoc converter", () => {
   let hasPandoc = false;
 
   beforeAll(async () => {
-    try {
-      const proc = Bun.spawn(["pandoc", "--version"], {
-        stderr: "ignore",
-        stdout: "ignore",
-      });
-      const exitCode = await proc.exited;
-      hasPandoc = exitCode === 0;
-    } catch (error) {
-      hasPandoc = false;
-    }
+    hasPandoc = await detectPandoc();
 
     if (!hasPandoc) {
-      console.warn("Pandoc not found. Skipping node pandoc conversion test.");
+      warnPandocMissing("node pandoc conversion");
     }
   });
 
