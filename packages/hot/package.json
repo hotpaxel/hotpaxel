@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "browser": "./src/index.browser.js",
+      "default": "./src/index.js"
+    },
+    "./node": "./src/index.node.js"
   },
   "scripts": {
     "build": "echo 'build hot'",

@@ -1,4 +1,4 @@
-const { createLuaFilterConverter } = require("./converter");
+const { createLuaFilterConverter } = require("./converter.browser");
 
 class HotManager {
   constructor({ converter } = {}) {
