@@ -1,5 +1,7 @@
+const { createStubConverter } = require("./converter");
+
 class HotManager {
-  constructor() {
+  constructor({ converter } = {}) {
     this.defaultTex = "\\documentclass{article}\\begin{document}\\end{document}";
     // currentTex represents the latest successful conversion output.
     this.currentTex = this.defaultTex;
@@ -9,6 +11,7 @@ class HotManager {
       error: null,
     };
     this.lastHtml = "";
+    this.converter = converter ?? createStubConverter();
   }
 
   async init() {
@@ -24,13 +27,13 @@ class HotManager {
       hasFailure: false,
       error: null,
     };
-    return `<pre>${escapeHtml(nextTex)}</pre>`;
+    return this.converter.texToHtml(nextTex);
   }
 
   async update(html) {
     this.lastHtml = html;
     try {
-      const convertedTex = this.convertHtmlToTex(html);
+      const convertedTex = await this.converter.htmlToTex(html);
       this.currentTex = convertedTex;
       this.lastValidTex = convertedTex;
       this.failureState = {
@@ -68,40 +71,7 @@ class HotManager {
       opts,
     };
   }
-
-  convertHtmlToTex(html) {
-    // Phase 1 stub: ensures a non-empty TeX string for SSOT continuity.
-    if (typeof html !== "string") {
-      throw new TypeError("HTML input must be a string");
-    }
-    if (html.includes("__FAIL__")) {
-      throw new Error("Stub conversion failure");
-    }
-    const safeText = escapeLatex(html);
-    return `\\documentclass{article}\\begin{document}${safeText}\\end{document}`;
-  }
 }
-
-const escapeHtml = (value) =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-
-const escapeLatex = (value) =>
-  value
-    .replaceAll("{", "\\{")
-    .replaceAll("}", "\\}")
-    .replaceAll("%", "\\%")
-    .replaceAll("$", "\\$")
-    .replaceAll("#", "\\#")
-    .replaceAll("&", "\\&")
-    .replaceAll("_", "\\_")
-    .replaceAll("^", "\\^{}")
-    .replaceAll("~", "\\~{}")
-    .replaceAll("<", "\\textless{}")
-    .replaceAll(">", "\\textgreater{}")
-    .replaceAll("\\", "\\textbackslash{}");
 
 module.exports = {
   HotManager,
