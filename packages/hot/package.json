@@ -5,6 +5,7 @@
   "exports": {
     ".": {
       "browser": "./src/index.browser.js",
+      "node": "./src/index.node.js",
       "default": "./src/index.js"
     },
     "./node": "./src/index.node.js"
