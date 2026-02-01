@@ -57,10 +57,7 @@ export class Job {
                 ], {
                     timeout: CONFIG.JOB_TIMEOUT_MS,
                     cwd: this.sandboxPath,
-                    user: 'node', // Ensure running as non-root (if inside docker where 'node' user exists)
-                    // Note: In local mac dev, 'node' user might not exist, so we catch potential error or skip strict user check locally.
-                    // For safety in this strict phase, we omit 'user' option here and rely on Docker USER directive for prod.
-                    // Adding 'user' option in execa requires the user to exist OS-level.
+                    // user: 'node', // Removed to avoid build error and runtime issues if user doesn't exist
                 });
             } catch (err: any) {
                 // Handle Timeout specifically

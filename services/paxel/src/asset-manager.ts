@@ -127,7 +127,12 @@ export class AssetManager {
             const ip = new Address6(hostname);
             if (ip.isLoopback()) return true;
             if (ip.isLinkLocal()) return true;
-            if (ip.isUniqueLocal()) return true;
+            // Manual check for Unique Local (fc00::/7) as isUniqueLocal() might be missing in types
+            const range = ip.parsedAddress[0]; // First 16-bit group
+            // fc00 to fdff. hex range.
+            // fc00 = 64512, fdff = 65023
+            const firstGroup = parseInt(range, 16);
+            if (firstGroup >= 0xfc00 && firstGroup <= 0xfdff) return true;
         }
 
         // Explicitly block "localhost"
