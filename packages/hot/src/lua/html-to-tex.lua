@@ -27,6 +27,9 @@ function Span(elem)
     return pandoc.RawInline("tex", raw_tex)
   else
     -- Fallback: If data-raw is missing, pass through.
+    -- We warn about this abnormal state because it means protection failed.
+    io.stderr:write("[HOT-WARNING] Missing data-raw attribute on hot-protect span. Unwrapping content.\n")
+
     -- We return the content (inlines) to effectively "unwrap" the span.
     return elem.content
   end

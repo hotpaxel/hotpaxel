@@ -69,9 +69,9 @@ describe("Lua Round-trip Vectors", () => {
   it("should pass Metadata command", async () => {
     // TeX: \makyesignmeta
     // Usually metadata commands might be outside paragraphs, but if wrapped in p it works too.
-    // Or just a raw span.
+    // We include dummy content in the span to avoid issues with HTML parsers dropping empty spans.
 
-    const html = `<p><span class="hot-protect" data-raw="\\makyesignmeta"></span></p>`;
+    const html = `<p><span class="hot-protect" data-raw="\\makyesignmeta">[Meta]</span></p>`;
     const expectedTex = `\\makyesignmeta`;
 
     await assertRoundTrip(html, expectedTex);
