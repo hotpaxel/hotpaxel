@@ -9,7 +9,7 @@ COPY packages packages
 COPY services services
 RUN bun install --frozen-lockfile
 
-WORKDIR /app/services/paxel
+WORKDIR /app/apps/paxel
 RUN bun run build
 
 
@@ -28,7 +28,7 @@ RUN groupadd -r paxel && useradd -r -g paxel -m paxel && \
 USER paxel
 
 # Copy the bundled server code
-COPY --from=builder --chown=paxel:paxel /app/services/paxel/dist/index.js ./dist/index.js
+COPY --from=builder --chown=paxel:paxel /app/apps/paxel/dist/index.js ./dist/index.js
 
 ENV PORT=8888
 ENV NODE_ENV=production
