@@ -5,7 +5,7 @@ services:
   paxel:
     build:
       context: .
-      dockerfile: services/paxel/Dockerfile
+      dockerfile: apps/paxel/Dockerfile
     ports:
       - "8888:8888"
     environment:

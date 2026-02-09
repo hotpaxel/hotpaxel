@@ -23,7 +23,7 @@ HOTPAXEL is a document generation product where **the source of truth is TeX** w
 
 - `packages/hot` — `@hotpaxel/hot` (HOT SDK)
 - `packages/ui-kit` — shared UI kit (internal)
-- `services/paxel` — rendering service (internal)
+- `apps/paxel` — rendering service (internal)
 - `apps/tiptex-web` — product UI (Next.js)
 
 ## Development Rules (Summary)
