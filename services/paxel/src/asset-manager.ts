@@ -6,7 +6,8 @@ import { CONFIG } from './config';
 
 export interface Asset {
     name: string;
-    url: string;
+    url?: string;
+    content?: string; // Base64 encoded content
 }
 
 export class AssetSecurityError extends Error {
@@ -48,7 +49,26 @@ export class AssetManager {
             throw new AssetSecurityError('Asset path traversal detected.');
         }
 
-        // 2. Validate URL (HTTPS only)
+        if (asset.content) {
+            // 2a. Handle Base64 Content
+            try {
+                const buffer = Buffer.from(asset.content, 'base64');
+                if (buffer.length > 5 * 1024 * 1024) { // 5MB limit for direct uploads
+                    throw new AssetSecurityError('Asset too large (>5MB).');
+                }
+                await fs.writeFile(destPath, buffer);
+                return;
+            } catch (err: any) {
+                if (err instanceof AssetSecurityError) throw err;
+                throw new AssetSecurityError(`Failed to write asset content: ${err.message}`);
+            }
+        }
+
+        if (!asset.url) {
+            throw new AssetSecurityError(`Asset must have either url or content.`);
+        }
+
+        // 2b. Validate URL (HTTPS only)
         let parsedUrl: URL;
         try {
             parsedUrl = new URL(asset.url);

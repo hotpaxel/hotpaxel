@@ -1,56 +1,38 @@
-# Stage 1: Builder (Bun)
-# We use Bun to install dependencies and build the TypeScript code efficiently.
+# --- Tier 1: Builder (Bun) ---
+# Compiles TypeScript server code.
 FROM oven/bun:1-debian AS builder
 
 WORKDIR /app
-
-# Copy configuration files
-# We copy the lockfile and workspace definitions to ensure reproducible builds
 COPY package.json turbo.json bun.lock ./
-
-# Copy workspace packages to satisfy lockfile references
-# This prevents "missing workspace" errors during install and ensures frozen lockfile works
 COPY apps apps
 COPY packages packages
 COPY services services
-
-# Install dependencies (frozen lockfile for reproducibility)
 RUN bun install --frozen-lockfile
 
-# Build the service
 WORKDIR /app/services/paxel
 RUN bun run build
 
 
-# Stage 2: Runtime (Node.js + XeLaTeX)
-FROM node:20-bookworm-slim AS runner
+# --- Tier 2: Final Runner ---
+# Use the pre-built image with TeXLive and Korean support
+FROM makye/texlive-node:latest-24.13.0-ko AS runner
 
-# 1. Install XeLaTeX and Dependencies
-# Added latex-extra and recommended for broader document support as per Review.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    texlive-xetex \
-    texlive-lang-korean \
-    texlive-latex-recommended \
-    texlive-latex-extra \
-    fonts-nanum \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2. Setup App Directory
 WORKDIR /app
 
-# 3. Create non-root user
-RUN chown node:node /app
+# Non-root user setup
+# Note: Check if the base image already has a suitable user, but 
+# we'll stick to 'paxel' for consistency with our app structure.
+RUN groupadd -r paxel && useradd -r -g paxel -m paxel && \
+    mkdir -p /home/paxel/.cache/fontconfig && \
+    chown -R paxel:paxel /app /home/paxel/.cache
+USER paxel
 
-# 4. Copy built artifacts from Builder Stage
-# We only need the bundled JS file.
-# The bundle includes all dependencies (hono, execa, etc.), so NO npm install is needed.
-COPY --from=builder --chown=node:node /app/services/paxel/dist/index.js ./dist/index.js
+# Copy the bundled server code
+COPY --from=builder --chown=paxel:paxel /app/services/paxel/dist/index.js ./dist/index.js
 
-# 5. Runtime Config
-USER node
 ENV PORT=8888
 ENV NODE_ENV=production
 EXPOSE 8888
 
-# 6. Start
 CMD ["node", "dist/index.js"]
+

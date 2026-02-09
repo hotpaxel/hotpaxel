@@ -47,18 +47,23 @@ export class Job {
             // -file-line-error: Better error format like "file.tex:10: Error"
             // -output-directory: Keep output in sandbox
             try {
-                await execa('xelatex', [
+                const xelatexArgs = [
                     '-no-shell-escape',
                     '-interaction=nonstopmode',
                     '-halt-on-error',
                     '-file-line-error',
                     '-output-directory', this.sandboxPath,
                     'input.tex'
-                ], {
+                ];
+
+                const runOptions = {
                     timeout: CONFIG.JOB_TIMEOUT_MS,
                     cwd: this.sandboxPath,
-                    // user: 'node', // Removed to avoid build error and runtime issues if user doesn't exist
-                });
+                };
+
+                // Run twice for correct cross-references and page counts
+                await execa('xelatex', xelatexArgs, runOptions);
+                await execa('xelatex', xelatexArgs, runOptions);
             } catch (err: any) {
                 // Handle Timeout specifically
                 if (err.timedOut) {
@@ -71,8 +76,39 @@ export class Job {
                 if (await fs.pathExists(logPath)) {
                     const logContent = await fs.readFile(logPath, 'utf8');
                     // Extract first error line
-                    const errorLine = logContent.split('\n').find(l => l.includes('!') || l.includes('Error:'));
-                    if (errorLine) logSummary = errorLine.trim();
+                    const lines = logContent.split('\n');
+                    // Look for common error patterns
+                    // 1. ! Error message
+                    // 2. filename:line: Error message
+                    // 3. ! Font ... not loadable: Metric (TFM) file not found
+                    // 4. kpathsea: make_tex: Invalid fontname
+
+                    const errorRegex = /^(!\s+|.*:\d+:\s+|kpathsea:\s+|Error\s+\d+\s+.*generating\s+output)/;
+                    const errorLines = lines.filter(l => errorRegex.test(l));
+
+                    if (errorLines.length > 0) {
+                        // Return the first few errors to avoid overwhelming, but give enough context
+                        // We also want to capture "Missed font" messages which might not start with !
+                        // actually, XeLaTeX often prints specific font errors clearly.
+
+                        // Let's try to find the *first* error and show its context.
+                        const firstErrorIdx = lines.findIndex(l => errorRegex.test(l));
+                        if (firstErrorIdx !== -1) {
+                            // Capture up to 5 lines of context or until the next error
+                            logSummary = lines.slice(firstErrorIdx, firstErrorIdx + 5).join('\n');
+                        }
+                    } else {
+                        // Fallback: check for "Emergency stop" or "Fatal error"
+                        const fatalIdx = lines.findIndex(l => l.includes('Emergency stop') || l.includes('Fatal error'));
+                        if (fatalIdx !== -1) {
+                            logSummary = lines.slice(Math.max(0, fatalIdx - 2), fatalIdx + 2).join('\n');
+                        }
+                    }
+
+                    // Log the full error to the server console for debugging (Internal)
+                    console.error('XeLaTeX Error Log Output:\n', logContent);
+                } else {
+                    console.error('XeLaTeX failed but no log file was found. Stderr:', err.stderr);
                 }
 
                 throw new CompileError(logSummary);

@@ -10,6 +10,8 @@ services:
       - "8888:8888"
     environment:
       - PORT=8888
+      - ENABLE_ASSETS=true
+      - JOB_TIMEOUT_MS=300000
     deploy:
       resources:
         limits:
