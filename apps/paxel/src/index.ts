@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import fs from 'fs-extra';
 import { CONFIG } from './config';
 import { queueManager, QueueFullError } from './queue';
@@ -8,6 +9,9 @@ import { getStorageAdapter } from './storage/adapter';
 import { AssetSecurityError } from './asset-manager';
 
 const app = new Hono();
+
+// Enable CORS for all origins in development
+app.use('*', cors());
 
 // 1. Strict Payload & Queue Guard Middleware
 app.use('/compile', async (c, next) => {

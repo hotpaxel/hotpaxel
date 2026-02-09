@@ -3,7 +3,7 @@ import EditorComponent from './components/Editor';
 import PdfPreview from './components/PdfPreview';
 import StatusPanel from './components/StatusPanel';
 import { hotSdk } from './services/hotSdk';
-import { generatePdfPreview } from './services/paxelServer';
+import { generatePdfPreview, revokePdfUrl } from './services/paxelServer';
 import { SdkStatus, HotDocumentState } from './types';
 import { AlertCircle } from 'lucide-react';
 
@@ -19,12 +19,16 @@ const App: React.FC = () => {
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
 
   // Handler for PDF Generation
-  // Defined before useEffect so it can be used in the dependency array
   const handlePdfRefresh = useCallback(async (texSource: string) => {
     setIsPdfLoading(true);
     try {
       const url = await generatePdfPreview(texSource);
-      setPdfUrl(url);
+      
+      // Clean up previous blob URL to prevent memory leaks
+      setPdfUrl(prevUrl => {
+        if (prevUrl) revokePdfUrl(prevUrl);
+        return url;
+      });
     } catch (e) {
       console.error("Failed to load PDF", e);
     } finally {
