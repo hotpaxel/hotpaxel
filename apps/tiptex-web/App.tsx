@@ -17,10 +17,12 @@ const App: React.FC = () => {
   // PDF Preview State
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   // Handler for PDF Generation
   const handlePdfRefresh = useCallback(async (texSource: string) => {
     setIsPdfLoading(true);
+    setRenderError(null); // Clear previous errors
     try {
       const url = await generatePdfPreview(texSource);
       
@@ -29,8 +31,9 @@ const App: React.FC = () => {
         if (prevUrl) revokePdfUrl(prevUrl);
         return url;
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load PDF", e);
+      setRenderError(e.message || "An unknown error occurred during PDF generation.");
     } finally {
       setIsPdfLoading(false);
     }
@@ -102,6 +105,7 @@ const App: React.FC = () => {
            <PdfPreview 
              url={pdfUrl} 
              isLoading={isPdfLoading}
+             error={renderError}
              onRefresh={() => documentState && handlePdfRefresh(documentState.tex)}
            />
         </div>

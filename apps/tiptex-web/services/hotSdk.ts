@@ -11,7 +11,7 @@ type Listener = (status: SdkStatus, state: HotDocumentState, error?: string) => 
 class HotSdkService {
   // Start with SUCCESS because the initial state is valid
   private status: SdkStatus = SdkStatus.SUCCESS;
-  
+
   private state: HotDocumentState = {
     html: '<p>Welcome to <strong>HOTPAXEL</strong>.</p><p>Start typing to generate TeX...</p>',
     tex: '\\textbf{Welcome to HOTPAXEL}.',
@@ -20,7 +20,7 @@ class HotSdkService {
   };
   private error: string | undefined = undefined;
   private listeners: Set<Listener> = new Set();
-  
+
   // Debounce timer for simulated processing
   private processingTimer: any = null;
 
@@ -71,7 +71,7 @@ class HotSdkService {
   private performRoundTripCheck(html: string) {
     try {
       // ⚠️ SIMULATED VALIDATION LOGIC ⚠️
-      
+
       // Rule 1: Check for broken protection tokens (Simulated simple check)
       // If a user tried to edit inside a token manually and broke the format
       if (html.includes('{%') && !html.includes('%}')) {
@@ -80,13 +80,13 @@ class HotSdkService {
 
       // Rule 2: Check for invalid HTML structures not supported by TeX mapper
       if (html.includes('<div style="')) {
-         throw new Error("Architecture Violation: Inline styles are not supported by the TeX mapper.");
+        throw new Error("Architecture Violation: Inline styles are not supported by the TeX mapper.");
       }
 
       // If valid, simulate TeX generation
       // In reality, this calls the WASM or Server-side converter
       const simulatedTex = this.mockHtmlToTex(html);
-      
+
       this.state.tex = simulatedTex;
       this.state.version += 1;
       this.state.lastUpdated = new Date();
@@ -105,6 +105,12 @@ class HotSdkService {
    * Mock converter to demonstrate "Source is TeX" output.
    */
   private mockHtmlToTex(html: string): string {
+    // If it's already a full LaTeX document (possibly wrapped in <p> by the editor), don't wrap it
+    const plainText = html.replace(/<[^>]*>/g, '').trim();
+    if (plainText.startsWith('\\documentclass')) {
+      return plainText;
+    }
+
     let tex = html
       .replace(/<p>/g, '')
       .replace(/<\/p>/g, '\n\n')
@@ -113,12 +119,17 @@ class HotSdkService {
       .replace(/<em>/g, '\\textit{')
       .replace(/<\/em>/g, '}')
       .replace(/&nbsp;/g, '~');
-    
+
     // Simulate finding our custom nodes
     // Note: The TokenNode extension will render something wrapping these values, 
     // but the raw HTML usually contains the value.
-    
-    return `\\documentclass{article}\n\\begin{document}\n${tex.trim()}\n\\end{document}`;
+
+    return `\\documentclass{article}
+\\usepackage{kotex}
+\\setmainhangulfont{NanumGothic}
+\\begin{document}
+${tex.trim()}
+\\end{document}`;
   }
 
   public getCurrentPdfUrl(): string {

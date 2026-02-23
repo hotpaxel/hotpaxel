@@ -25,10 +25,9 @@ export const generatePdfPreview = async (texSource: string): Promise<string> => 
         const blobUrl = URL.createObjectURL(pdfBlob);
 
         return blobUrl;
-    } catch (error) {
+    } catch (error: any) {
         console.error('[PAXEL] Compilation failed:', error);
-        // Return a fallback sample PDF on error
-        return "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf";
+        throw error;
     }
 };
 
