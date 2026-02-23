@@ -3,7 +3,7 @@
  * Communicates with the PAXEL backend to render PDF from TeX source.
  */
 
-const PAXEL_URL = import.meta.env.VITE_PAXEL_URL || 'http://localhost:8888';
+const PAXEL_URL = '/api';
 
 export const generatePdfPreview = async (texSource: string): Promise<string> => {
     try {

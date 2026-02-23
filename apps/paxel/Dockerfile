@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json turbo.json bun.lock ./
 COPY apps apps
 COPY packages packages
-RUN bun install --frozen-lockfile
+RUN bun install
 
 WORKDIR /app/apps/paxel
 RUN bun run build
