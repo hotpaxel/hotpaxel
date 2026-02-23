@@ -24,9 +24,13 @@ FROM nginx:stable-alpine
 # Copy built assets
 COPY --from=builder /app/apps/tiptex-web/dist /usr/share/nginx/html
 
-# Copy Nginx config
-COPY apps/tiptex-web/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy Nginx config template
+COPY apps/tiptex-web/nginx.conf /etc/nginx/templates/default.conf.template
+
+ENV PAXEL_HOST=paxel
 
 EXPOSE 80
 
+# The official nginx image entrypoint will automatically run envsubst on files in /etc/nginx/templates/*.template
+# and output them to /etc/nginx/conf.d/*.conf
 CMD ["nginx", "-g", "daemon off;"]
