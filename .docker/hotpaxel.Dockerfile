@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y nginx gettext-base && rm -rf /var/lib/a
 RUN groupadd -r paxel && useradd -r -g paxel -m paxel
 
 # 미리 빌드된 바이너리를 복사합니다.
-COPY paxel ./paxel
+ARG TARGETARCH
+COPY artifacts/${TARGETARCH}/paxel ./paxel
 RUN chmod +x ./paxel
 
 # 미리 빌드된 프런트엔드 에셋을 복사합니다.

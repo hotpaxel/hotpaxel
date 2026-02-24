@@ -25,7 +25,7 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WASM (@hotpaxel/hot)
-        run: wasm-pack build --target web --release
+        run: wasm-pack build --target web --release --scope hotpaxel
         working-directory: crates/hot
 
       - name: Setup Bun
@@ -52,7 +52,38 @@ jobs:
           name: wasm-pkg
           path: crates/hot/pkg/
 
-# Removed build-backend job in favor of unified Docker build
+  build-backend:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            artifact_name: paxel-amd64
+          - target: aarch64-unknown-linux-gnu
+            artifact_name: paxel-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install zigbuild & dependencies
+        run: |
+          pip3 install cargo-zigbuild
+          sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+
+      - name: Build backend
+        run: cargo zigbuild --release --target ${{ matrix.target }}
+        working-directory: crates/paxel
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: target/${{ matrix.target }}/release/paxel
 
   npm-publish:
     needs: build-frontend
@@ -87,7 +118,7 @@ jobs:
         working-directory: crates/hot/pkg
 
   docker-publish:
-    needs: [build-frontend]
+    needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -96,6 +127,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Download amd64 backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: paxel-amd64
+          path: artifacts/amd64
+
+      - name: Download arm64 backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: paxel-arm64
+          path: artifacts/arm64
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -114,7 +163,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile
+          file: .docker/hotpaxel.Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           provenance: false
