@@ -1,4 +1,5 @@
 import { SdkStatus, HotDocumentState } from '../types';
+// @ts-ignore
 import init, { HotConverter } from '@hotpaxel/hot';
 
 /**
