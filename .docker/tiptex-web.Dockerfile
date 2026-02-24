@@ -1,4 +1,5 @@
 FROM nginx:stable-alpine
+LABEL org.opencontainers.image.source=https://github.com/hotpaxel/hotpaxel
 # 빌드 컨텍스트 루트에서 실행된다고 가정
 COPY dist /usr/share/nginx/html
 COPY apps/tiptex-web/nginx.conf /etc/nginx/templates/default.conf.template

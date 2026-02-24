@@ -1,4 +1,5 @@
 FROM makye/texlive-node:latest-24.13.0-ko
+LABEL org.opencontainers.image.source=https://github.com/hotpaxel/hotpaxel
 WORKDIR /app
 USER root
 RUN apt-get update && apt-get install -y nginx gettext-base && rm -rf /var/lib/apt/lists/*

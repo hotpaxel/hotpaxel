@@ -1,10 +1,10 @@
 [package]
 name = "hot"
-version = "0.2.0-alpha.2"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 description = "High-Performance HTML ↔ TeX Converter"
-repository = "https://github.com/hotpaxel/hotpaxel"
-license = "MIT"
+repository.workspace = true
+license.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]

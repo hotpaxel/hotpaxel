@@ -8,9 +8,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  VERSION: ${{ github.ref_name }} # e.g. v0.2.0-alpha.3
 
 jobs:
   build-frontend:
+    name: Build Frontend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,6 +22,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+
+      - name: Sync version from tag
+        run: |
+          # Remove 'v' prefix if present
+          VER=$(echo "${{ env.VERSION }}" | sed 's/^v//')
+          echo "Syncing version to $VER"
+          # Root Cargo.toml
+          sed -i "s/^version = \".*\"/version = \"$VER\"/" Cargo.toml
+          # Only published package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VER\"/" crates/hot/package.json
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -53,13 +65,15 @@ jobs:
           path: crates/hot/pkg/
 
   build-backend:
+    name: Build Backend (${{ matrix.arch }})
     strategy:
       matrix:
+        arch: [amd64, arm64]
         include:
-          - target: x86_64-unknown-linux-gnu
-            artifact_name: paxel-amd64
-          - target: aarch64-unknown-linux-gnu
-            artifact_name: paxel-arm64
+          - arch: amd64
+            target: x86_64-unknown-linux-gnu
+          - arch: arm64
+            target: aarch64-unknown-linux-gnu
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -69,6 +83,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      - name: Sync version from tag
+        run: |
+          VER=$(echo "${{ env.VERSION }}" | sed 's/^v//')
+          sed -i "s/^version = \".*\"/version = \"$VER\"/" Cargo.toml
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VER\"/" crates/hot/package.json
 
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
@@ -88,10 +108,11 @@ jobs:
       - name: Upload backend artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.artifact_name }}
+          name: paxel-${{ matrix.arch }}
           path: target/${{ matrix.target }}/release/paxel
 
   npm-publish:
+    name: NPM Publish
     needs: build-frontend
     runs-on: ubuntu-latest
     permissions:
@@ -117,6 +138,7 @@ jobs:
         working-directory: crates/hot/pkg
 
   docker-publish:
+    name: Docker Publish
     needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     permissions:
@@ -158,17 +180,68 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push unified image
+      - name: Build and push Hotpaxel (Unified)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: .docker/hotpaxel.Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          provenance: false
-          sbom: false
           tags: |
             ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}
             ghcr.io/${{ github.repository_owner }}/hotpaxel:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and push Paxel (Backend)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/paxel.Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/paxel:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push TipTeX Web (Frontend)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .docker/tiptex-web.Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/tiptex-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  github-release:
+    name: Create GitHub Release
+    needs: [build-frontend, build-backend, npm-publish, docker-publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: release-artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/paxel-amd64/paxel
+            release-artifacts/paxel-arm64/paxel
+            release-artifacts/hot/*
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')

@@ -1,9 +1,9 @@
 [package]
 name = "paxel"
-version = "0.2.0-alpha.2"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 description = "Stateless XeLaTeX Rendering Engine"
-repository = "https://github.com/hotpaxel/hotpaxel"
+repository.workspace = true
 license-file = "../../LICENSE"
 
 [dependencies]
