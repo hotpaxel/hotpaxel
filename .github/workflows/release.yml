@@ -106,8 +106,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Inspect package.json
-        run: cat package.json
+      - name: Patch package.json for OIDC
+        run: |
+          # wasm-pack might strip publishConfig or repository
+          jq '. + {
+            "publishConfig": {"access": "public", "provenance": true},
+            "repository": {"type": "git", "url": "git+https://github.com/hotpaxel/hotpaxel.git"}
+          }' package.json > package.json.tmp && mv package.json.tmp package.json
+          cat package.json
         working-directory: crates/hot/pkg
 
       - name: Publish to NPM
@@ -132,7 +138,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: dist
+          path: frontend-dist
 
       - name: Download amd64 backend artifact
         uses: actions/download-artifact@v4
