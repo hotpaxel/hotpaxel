@@ -4,11 +4,11 @@ WORKDIR /app
 RUN groupadd -r paxel && useradd -r -g paxel -m paxel && \
     mkdir -p /home/paxel/.cache/fontconfig && \
     chown -R paxel:paxel /app /home/paxel/.cache
-USER paxel
 # 아키텍처별 바이너리 복사
 ARG TARGETARCH
-COPY artifacts/${TARGETARCH}/paxel ./paxel
+COPY --chown=paxel:paxel artifacts/${TARGETARCH}/paxel ./paxel
 RUN chmod +x ./paxel
+USER paxel
 ENV PORT=8888
 ENV NODE_ENV=production
 EXPOSE 8888

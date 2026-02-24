@@ -137,8 +137,8 @@ jobs:
         run: npm publish --access public --tag alpha
         working-directory: crates/hot/pkg
 
-  docker-publish:
-    name: Docker Publish
+  docker-publish-hotpaxel:
+    name: Docker Publish (Hotpaxel - Unified)
     needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     permissions:
@@ -193,6 +193,43 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  docker-publish-paxel:
+    name: Docker Publish (Paxel - Backend)
+    needs: [build-backend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download amd64 backend artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: paxel-amd64
+          path: artifacts/amd64
+
+      - name: Download arm64 backend artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: paxel-arm64
+          path: artifacts/arm64
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Paxel (Backend)
         uses: docker/build-push-action@v6
         with:
@@ -205,6 +242,37 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/paxel:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  docker-publish-tiptex-web:
+    name: Docker Publish (TipTeX Web - Frontend)
+    needs: [build-frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download @hotpaxel/tiptex-web artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: tiptex-web
+          path: dist
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push TipTeX Web (Frontend)
         uses: docker/build-push-action@v6
@@ -221,7 +289,7 @@ jobs:
 
   github-release:
     name: Create GitHub Release
-    needs: [build-frontend, build-backend, npm-publish, docker-publish]
+    needs: [build-frontend, build-backend, npm-publish, docker-publish-hotpaxel, docker-publish-paxel, docker-publish-tiptex-web]
     runs-on: ubuntu-latest
     permissions:
       contents: write
