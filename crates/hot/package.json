@@ -1,6 +1,15 @@
 {
     "name": "@hotpaxel/hot",
     "version": "0.2.0-alpha.3",
+    "description": "High-Performance HTML ↔ TeX Converter",
+    "keywords": [
+        "latex",
+        "tex",
+        "html",
+        "converter",
+        "wasm",
+        "rust"
+    ],
     "license": "MIT",
     "author": "Minchul Kwon <mstorm@mstorm.net>",
     "private": false,
@@ -10,7 +19,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/hotpaxel/hotpaxel.git"
+        "url": "https://github.com/hotpaxel/hotpaxel"
     },
     "main": "pkg/hot.js",
     "module": "pkg/hot.js",
