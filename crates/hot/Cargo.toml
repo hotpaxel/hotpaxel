@@ -1,6 +1,6 @@
 [package]
 name = "hot"
-version = "0.2.0"
+version = "0.2.0-alpha.2"
 edition = "2021"
 description = "High-Performance HTML ↔ TeX Converter"
 repository = "https://github.com/hotpaxel/hotpaxel"
