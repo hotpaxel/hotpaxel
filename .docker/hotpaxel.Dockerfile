@@ -10,7 +10,7 @@ COPY artifacts/${TARGETARCH}/paxel ./paxel
 RUN chmod +x ./paxel
 
 # 미리 빌드된 프런트엔드 에셋을 복사합니다.
-COPY frontend-dist /var/www/html
+COPY dist /var/www/html
 COPY apps/tiptex-web/nginx.conf /etc/nginx/sites-available/default.template
 
 RUN echo '#!/bin/sh\n\
