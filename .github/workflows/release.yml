@@ -301,10 +301,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Download all artifacts
+      - name: Download paxel-amd64
         uses: actions/download-artifact@v6
         with:
-          path: release-artifacts
+          name: paxel-amd64
+          path: release-artifacts/paxel-amd64
+
+      - name: Download paxel-arm64
+        uses: actions/download-artifact@v6
+        with:
+          name: paxel-arm64
+          path: release-artifacts/paxel-arm64
+
+      - name: Download hot package
+        uses: actions/download-artifact@v6
+        with:
+          name: hot
+          path: release-artifacts/hot
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
