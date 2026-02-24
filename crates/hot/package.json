@@ -2,6 +2,7 @@
     "name": "@hotpaxel/hot",
     "version": "0.2.0-alpha.3",
     "license": "MIT",
+    "author": "Minchul Kwon <mstorm@mstorm.net>",
     "private": false,
     "publishConfig": {
         "access": "public",
