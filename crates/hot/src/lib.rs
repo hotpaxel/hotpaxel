@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use regex::Regex;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct HotConverter {
@@ -24,7 +24,7 @@ impl HotConverter {
             let token = mat.as_str();
             let escaped_token = html_escape::encode_safe(token);
             let attr_token = html_escape::encode_double_quoted_attribute(token);
-            
+
             html.push_str(&format!(
                 "<span class=\"hot-protect\" data-raw=\"{}\">{}</span>",
                 attr_token, escaped_token
@@ -37,11 +37,15 @@ impl HotConverter {
     }
 
     pub fn extract_hot_tex(&self, html: &str) -> String {
-        let pre_regex = match Regex::new(r#"(?i)<pre\b[^>]*?data-hot-tex=['"]true['"][^>]*?>([\s\S]*?)</pre>"#) {
-            Ok(r) => r,
-            Err(_) => return String::new(),
-        };
-        let span_regex = match Regex::new(r#"(?i)<span\b[^>]*?class=['"][^'"]*?hot-protect[^'"]*?['"][^>]*?>([\s\S]*?)</span>"#) {
+        let pre_regex =
+            match Regex::new(r#"(?i)<pre\b[^>]*?data-hot-tex=['"]true['"][^>]*?>([\s\S]*?)</pre>"#)
+            {
+                Ok(r) => r,
+                Err(_) => return String::new(),
+            };
+        let span_regex = match Regex::new(
+            r#"(?i)<span\b[^>]*?class=['"][^'"]*?hot-protect[^'"]*?['"][^>]*?>([\s\S]*?)</span>"#,
+        ) {
             Ok(r) => r,
             Err(_) => return String::new(),
         };
@@ -65,14 +69,17 @@ impl HotConverter {
         let mut body = body_match.as_str().to_string();
 
         // 1. Recover protected tokens
-        body = span_regex.replace_all(&body, |caps: &regex::Captures| {
-            let span_tag = caps.get(0).unwrap().as_str();
-            if let Some(attr_caps) = attr_regex.captures(span_tag) {
-                html_escape::decode_html_entities(attr_caps.get(1).unwrap().as_str()).to_string()
-            } else {
-                String::new()
-            }
-        }).to_string();
+        body = span_regex
+            .replace_all(&body, |caps: &regex::Captures| {
+                let span_tag = caps.get(0).unwrap().as_str();
+                if let Some(attr_caps) = attr_regex.captures(span_tag) {
+                    html_escape::decode_html_entities(attr_caps.get(1).unwrap().as_str())
+                        .to_string()
+                } else {
+                    String::new()
+                }
+            })
+            .to_string();
 
         // 2. Strip other HTML tags
         body = tag_regex.replace_all(&body, "").to_string();

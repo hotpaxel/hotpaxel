@@ -1,12 +1,12 @@
-mod models;
 mod handlers;
+mod models;
 
+use crate::handlers::{compiler, fonts};
 use axum::{
     routing::{get, post},
     Router,
 };
 use std::net::SocketAddr;
-use crate::handlers::{compiler, fonts};
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +19,7 @@ async fn main() {
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "8888".to_string());
     let addr: SocketAddr = format!("0.0.0.0:{}", port).parse().unwrap();
-    
+
     tracing::info!("PAXEL-RS listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
