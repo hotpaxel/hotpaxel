@@ -319,6 +319,12 @@ jobs:
           name: hot
           path: release-artifacts/hot
 
+      - name: Download tiptex-web
+        uses: actions/download-artifact@v6
+        with:
+          name: tiptex-web
+          path: release-artifacts/tiptex-web
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -326,6 +332,7 @@ jobs:
             release-artifacts/paxel-amd64/paxel
             release-artifacts/paxel-arm64/paxel
             release-artifacts/hot/*
+            release-artifacts/tiptex-web/**
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
           draft: false
