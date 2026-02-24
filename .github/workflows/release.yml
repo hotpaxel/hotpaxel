@@ -52,38 +52,7 @@ jobs:
           name: wasm-pkg
           path: crates/hot/pkg/
 
-  build-backend:
-    strategy:
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            artifact_name: paxel-amd64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm64
-            artifact_name: paxel-arm64
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Install dependencies (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
-
-      - name: Build backend
-        run: cargo build --release --target ${{ matrix.target }}
-        working-directory: crates/paxel
-
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: target/${{ matrix.target }}/release/paxel
+# Removed build-backend job in favor of unified Docker build
 
   npm-publish:
     needs: build-frontend
@@ -112,46 +81,15 @@ jobs:
         working-directory: crates/hot/pkg
 
   docker-publish:
-    needs: [build-frontend, build-backend]
+    needs: [build-frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: tiptex-web
-            dockerfile: .docker/tiptex-web.Dockerfile
-            name: tiptex-web
-          - image: paxel
-            dockerfile: .docker/paxel.Dockerfile
-            name: paxel
-          - image: hotpaxel
-            dockerfile: .docker/hotpaxel.Dockerfile
-            name: hotpaxel
-        platform: [linux/amd64, linux/arm64]
-
     steps:
-      - name: Checkout repository (for nginx configs and Dockerfiles)
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist
-
-      - name: Download backend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: paxel-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
-          path: .
-      
-      # Make sure the downloaded binary is executable
-      - name: Make binary executable
-        run: chmod +x paxel
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -166,15 +104,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push unified image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: Dockerfile
           push: true
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           provenance: false
           sbom: false
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ github.ref_name }}-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:latest-${{ matrix.platform == 'linux/arm64' && 'arm64' || 'amd64' }}
+            ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/hotpaxel:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
