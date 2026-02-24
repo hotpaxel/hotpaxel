@@ -7,7 +7,9 @@
             ],
             "outputs": [
                 "dist/**",
-                ".next/**"
+                ".next/**",
+                "pkg/**",
+                "target/**"
             ]
         },
         "lint": {
@@ -15,6 +17,9 @@
         },
         "test": {
             "outputs": []
+        },
+        "clean": {
+            "cache": false
         }
     }
 }

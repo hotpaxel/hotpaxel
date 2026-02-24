@@ -33,7 +33,7 @@
       "name": "@hotpaxel/hot",
       "version": "0.2.0",
       "devDependencies": {
-        "wasm-pack": "^0.13.0",
+        "wasm-pack": "^0.14.0",
       },
     },
     "crates/paxel": {
@@ -486,7 +486,7 @@
 
     "w3c-keyname": ["w3c-keyname@2.2.8", "", {}, "sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ=="],
 
-    "wasm-pack": ["wasm-pack@0.13.1", "", { "dependencies": { "binary-install": "^1.0.1" }, "bin": { "wasm-pack": "run.js" } }, "sha512-P9exD4YkjpDbw68xUhF3MDm/CC/3eTmmthyG5bHJ56kalxOTewOunxTke4SyF8MTXV6jUtNjXggPgrGmMtczGg=="],
+    "wasm-pack": ["wasm-pack@0.14.0", "", { "dependencies": { "binary-install": "^1.1.2" }, "bin": { "wasm-pack": "run.js" } }, "sha512-7uKj+483b6ETTnuWHK3zKNB3Ca3M159tPZ5shyXxI4j7i9Lk82rL2ck/L6E9O5VMWk9JgowdtTBOSfWmGBRFtw=="],
 
     "wrappy": ["wrappy@1.0.2", "", {}, "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="],
 

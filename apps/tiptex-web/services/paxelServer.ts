@@ -5,16 +5,21 @@
 
 const PAXEL_URL = '/api';
 
-export const generatePdfPreview = async (texSource: string): Promise<string> => {
+import { FontInfo } from '../types';
+
+export const generatePdfPreview = async (texSource: string, fontFamily?: string): Promise<string> => {
     try {
-        console.log('[PAXEL] Compiling TeX:', texSource);
-        if (texSource === undefined || texSource === null) {
-            console.error('[PAXEL] texSource is null or undefined!');
+        console.log('[PAXEL] Compiling TeX with font:', fontFamily);
+
+        let fontConfig = '';
+        if (fontFamily) {
+            fontConfig = `\\usepackage{fontspec}\n\\setmainfont{${fontFamily}}`;
+        } else {
+            fontConfig = `\\usepackage{kotex}\n\\setmainhangulfont{NanumGothic}`;
         }
 
         const fullTex = `\\documentclass{article}
-\\usepackage{kotex}
-\\setmainhangulfont{NanumGothic}
+${fontConfig}
 \\begin{document}
 ${texSource}
 \\end{document}`;
@@ -40,6 +45,17 @@ ${texSource}
     } catch (error: any) {
         console.error('[PAXEL] Compilation failed:', error);
         throw error;
+    }
+};
+
+export const fetchFonts = async (): Promise<FontInfo[]> => {
+    try {
+        const response = await fetch(`${PAXEL_URL}/fonts`);
+        if (!response.ok) throw new Error('Failed to fetch fonts');
+        return await response.json();
+    } catch (error) {
+        console.error('[PAXEL] Failed to fetch fonts:', error);
+        return [];
     }
 };
 

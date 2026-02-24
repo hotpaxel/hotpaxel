@@ -19,12 +19,10 @@ WORKDIR /app
 COPY package.json turbo.json bun.lock Cargo.toml ./
 COPY apps/tiptex-web/package.json ./apps/tiptex-web/
 COPY crates/hot/package.json ./crates/hot/
-COPY crates/paxel/package.json ./crates/paxel/
 
 # Copy full source (excluding what's in .dockerignore, like pkg)
 COPY apps/tiptex-web ./apps/tiptex-web
 COPY crates/hot ./crates/hot
-COPY crates/paxel ./crates/paxel
 
 # Explicitly copy built WASM package (so it's not overwritten/missing)
 COPY --from=wasm-builder /app/crates/hot/pkg /app/crates/hot/pkg

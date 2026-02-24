@@ -1,12 +1,11 @@
 # --- Stage 1: Build ---
-FROM --platform=linux/amd64 rust:1.88-slim-bookworm AS builder
+FROM rust:1.88-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY package.json turbo.json bun.lock Cargo.toml ./
 COPY crates/paxel ./crates/paxel
-COPY crates/hot ./crates/hot
 
 WORKDIR /app/crates/paxel
 RUN cargo build --release

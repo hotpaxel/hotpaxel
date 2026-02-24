@@ -1,5 +1,5 @@
 # --- Stage 1: Build Rust Backend & WASM ---
-FROM --platform=linux/amd64 rust:1.88-slim-bookworm AS rust-builder
+FROM rust:1.88-slim-bookworm AS rust-builder
 
 RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -16,7 +16,7 @@ WORKDIR /app/crates/hot
 RUN wasm-pack build --target web --release --scope hotpaxel
 
 # --- Stage 2: Build Frontend ---
-FROM --platform=linux/amd64 oven/bun:1-debian AS fe-builder
+FROM oven/bun:1-debian AS fe-builder
 WORKDIR /app
 COPY package.json turbo.json bun.lock ./
 COPY apps/tiptex-web/package.json ./apps/tiptex-web/

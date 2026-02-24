@@ -3,8 +3,8 @@ import EditorComponent from './components/Editor';
 import PdfPreview from './components/PdfPreview';
 import StatusPanel from './components/StatusPanel';
 import { hotSdk } from './services/hotSdk';
-import { generatePdfPreview, revokePdfUrl } from './services/paxelServer';
-import { SdkStatus, HotDocumentState } from './types';
+import { generatePdfPreview, revokePdfUrl, fetchFonts } from './services/paxelServer';
+import { SdkStatus, HotDocumentState, FontInfo } from './types';
 import { AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -14,17 +14,21 @@ const App: React.FC = () => {
   const [documentState, setDocumentState] = useState<HotDocumentState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   
+  // Font State
+  const [fonts, setFonts] = useState<FontInfo[]>([]);
+  const [selectedFontFamily, setSelectedFontFamily] = useState<string>('NanumGothic');
+
   // PDF Preview State
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
   const [renderError, setRenderError] = useState<string | null>(null);
 
   // Handler for PDF Generation
-  const handlePdfRefresh = useCallback(async (texSource: string) => {
+  const handlePdfRefresh = useCallback(async (texSource: string, fontFamily?: string) => {
     setIsPdfLoading(true);
     setRenderError(null); // Clear previous errors
     try {
-      const url = await generatePdfPreview(texSource);
+      const url = await generatePdfPreview(texSource, fontFamily);
       
       // Clean up previous blob URL to prevent memory leaks
       setPdfUrl(prevUrl => {
@@ -39,6 +43,11 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Fetch fonts on mount
+  useEffect(() => {
+    fetchFonts().then(setFonts);
+  }, []);
+
   // 1. Subscribe to HOT SDK changes
   useEffect(() => {
     const unsubscribe = hotSdk.subscribe((status, state, error) => {
@@ -47,14 +56,13 @@ const App: React.FC = () => {
       setErrorMessage(error);
       
       // Auto-refresh PDF logic
-      // Trigger on SUCCESS, or on initial IDLE state if we have content
       if (status === SdkStatus.SUCCESS || (status === SdkStatus.IDLE && state.tex)) {
-        handlePdfRefresh(state.tex);
+        handlePdfRefresh(state.tex, selectedFontFamily);
       }
     });
 
     return () => unsubscribe();
-  }, [handlePdfRefresh]);
+  }, [handlePdfRefresh, selectedFontFamily]);
 
   if (!documentState) {
     return <div className="flex items-center justify-center h-screen text-slate-400">Loading HOT SDK...</div>;
@@ -68,6 +76,12 @@ const App: React.FC = () => {
         status={sdkStatus} 
         error={errorMessage} 
         version={documentState.version} 
+        fonts={fonts}
+        selectedFont={selectedFontFamily}
+        onFontChange={(f) => {
+          setSelectedFontFamily(f);
+          if (documentState.tex) handlePdfRefresh(documentState.tex, f);
+        }}
       />
 
       {/* 2. Critical Error Banner (Constraint: Must clearly show failure) */}
@@ -106,7 +120,7 @@ const App: React.FC = () => {
              url={pdfUrl} 
              isLoading={isPdfLoading}
              error={renderError}
-             onRefresh={() => documentState && handlePdfRefresh(documentState.tex)}
+             onRefresh={() => documentState && handlePdfRefresh(documentState.tex, selectedFontFamily)}
            />
         </div>
 

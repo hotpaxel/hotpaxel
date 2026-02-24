@@ -1,13 +1,13 @@
-# 🔥 HOTPAXEL
+# HOTPAXEL
 
 HOTPAXEL is a high-performance document generation suite where **the source of truth is TeX** while the editing experience remains fluid and modern.
 
-## 🚀 Core Modules
+## Core Modules
 
 - **HOT (Client SDK)**  
   High-performance HTML ↔ TeX converter written in **Rust** and compiled to **WASM**.  
   SSOT: `currentTex` (always compilable, logic-intact, serializable).
-  📦 Available as [`@hotpaxel/hot`](https://www.npmjs.com/package/@hotpaxel/hot) on NPM.
+  Available as [`@hotpaxel/hot`](https://www.npmjs.com/package/@hotpaxel/hot) on NPM.
 
 - **PAXEL (Server Engine)**  
   Stateless XeLaTeX rendering engine implemented in **Rust (Axum)**. Produces PDFs under strict security and resource constraints.
@@ -15,7 +15,7 @@ HOTPAXEL is a high-performance document generation suite where **the source of t
 - **Tiptex Web (Product UI)**  
   A modern UI layer (**Vite/React**) that integrates the HOT WASM SDK and uses PAXEL for high-fidelity PDF generation.
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Rust**: Powering the high-performance conversion SDK and Rendering Engine.
 - **WebAssembly**: Enabling Rust-speed TeX processing directly in the browser.
@@ -24,20 +24,20 @@ HOTPAXEL is a high-performance document generation suite where **the source of t
 - **Bun & Turbo**: Modern toolkit for monorepo management and ultra-fast automation.
 - **Docker**: Containerized deployment for consistent environments across any cloud.
 
-## 🏗️ Monorepo Layout
+## Monorepo Layout
 
 - `crates/hot` — [HOT SDK](crates/hot/README.md) (**Rust/WASM**)
 - `crates/paxel` — [Rendering Engine](crates/paxel/README.md) (**Rust/Axum**)
 - `apps/tiptex-web` — [Product UI](apps/tiptex-web/README.md) (**Vite/React**)
 
-## 🐳 Docker Strategy
+## Docker Strategy
 
 We provide 3 specialized Docker images via [GHCR](https://github.com/hotpaxel/hotpaxel/pkgs/container):
 - `hotpaxel`: Unified image with both UI and Engine.
 - `tiptex-web`: Frontend-only (Nginx).
 - `paxel`: Backend-only (XeLaTeX/Rust).
 
-## 🛠️ Management Commands
+## Management Commands
 
 | Command | Description |
 | :--- | :--- |
@@ -47,13 +47,13 @@ We provide 3 specialized Docker images via [GHCR](https://github.com/hotpaxel/ho
 | `./build.sh` | Build the unified `hotpaxel` image |
 | `./build-all.sh` | Build all 3 core images in sequence |
 
-## 📐 Engineering Principles
+## Engineering Principles
 
 - **Spec is Law**: Refer to `docs/architecture.md` for all technical decisions.
 - **SSOT**: The TeX source is the absolute truth; HTML is a transient view.
 - **Statelessness**: The backend never stores document state.
 
-## � Open Source Licenses
+## Open Source Licenses
 
 This project is built upon the following technologies and appreciates their contributions to the open-source ecosystem:
 

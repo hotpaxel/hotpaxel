@@ -3,16 +3,22 @@
     "version": "0.2.0",
     "private": false,
     "publishConfig": {
-        "access": "public"
+        "access": "public",
+        "provenance": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/hotpaxel/hotpaxel.git"
     },
     "main": "pkg/hot.js",
     "module": "pkg/hot.js",
     "types": "pkg/hot.d.ts",
     "scripts": {
         "build": "wasm-pack build --target web --scope hotpaxel",
-        "test": "cargo test"
+        "test": "cargo test",
+        "clean": "cargo clean && rm -rf pkg .turbo"
     },
     "devDependencies": {
-        "wasm-pack": "^0.13.0"
+        "wasm-pack": "^0.14.0"
     }
 }

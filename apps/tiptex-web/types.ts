@@ -29,6 +29,13 @@ export interface StatusPanelProps {
   lastSynced?: Date;
 }
 
+export interface FontInfo {
+  family: string;
+  styles: string[];
+  fileName: string;
+  raw?: string;
+}
+
 export interface PdfPreviewProps {
   pdfUrl: string | null;
   isLoading: boolean;
