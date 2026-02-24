@@ -1,4 +1,5 @@
 import { SdkStatus, HotDocumentState } from '../types';
+import init, { HotConverter } from '@hotpaxel/hot';
 
 /**
  * ⚠️ HOT SDK SIMULATION ⚠️
@@ -23,6 +24,9 @@ class HotSdkService {
 
   // Debounce timer for simulated processing
   private processingTimer: any = null;
+
+  private converter: HotConverter | null = null;
+  private initialized: Promise<void> | null = null;
 
   constructor() {
     console.log('[HOT SDK] Initialized');
@@ -64,30 +68,40 @@ class HotSdkService {
     }, 600); // Simulate network/processing delay
   }
 
+  private async ensureInitialized() {
+    if (this.initialized) return this.initialized;
+    this.initialized = (async () => {
+      await init();
+      this.converter = new HotConverter();
+      console.log('[HOT SDK] WASM Initialized');
+    })();
+    return this.initialized;
+  }
+
   /**
    * Simulates the core "Safety" logic of HOTPAXEL.
    * Checks for broken tokens or invalid structures.
    */
-  private performRoundTripCheck(html: string) {
+  private async performRoundTripCheck(html: string) {
     try {
-      // ⚠️ SIMULATED VALIDATION LOGIC ⚠️
+      await this.ensureInitialized();
+      const converter = this.converter!;
 
-      // Rule 1: Check for broken protection tokens (Simulated simple check)
-      // If a user tried to edit inside a token manually and broke the format
-      if (html.includes('{%') && !html.includes('%}')) {
-        throw new Error("Syntax Error: Unclosed logic block '{%'.");
+      // 1. Extract TeX from HTML (Round-trip)
+      const wrappedHtml = `<pre data-hot-tex="true">${html}</pre>`;
+      const extractedTex = converter.extract_hot_tex(wrappedHtml);
+
+      let finalTex: string;
+      if (extractedTex && extractedTex.length > 0) {
+        // If v0.2 WASM extraction succeeded, use it
+        finalTex = extractedTex;
+      } else {
+        // Fallback to simple conversion if extraction returns empty
+        const plainText = html.replace(/<[^>]*>/g, '').trim();
+        finalTex = converter.escape_latex(plainText);
       }
 
-      // Rule 2: Check for invalid HTML structures not supported by TeX mapper
-      if (html.includes('<div style="')) {
-        throw new Error("Architecture Violation: Inline styles are not supported by the TeX mapper.");
-      }
-
-      // If valid, simulate TeX generation
-      // In reality, this calls the WASM or Server-side converter
-      const simulatedTex = this.mockHtmlToTex(html);
-
-      this.state.tex = simulatedTex;
+      this.state.tex = finalTex;
       this.state.version += 1;
       this.state.lastUpdated = new Date();
       this.status = SdkStatus.SUCCESS;
@@ -101,36 +115,6 @@ class HotSdkService {
     }
   }
 
-  /**
-   * Mock converter to demonstrate "Source is TeX" output.
-   */
-  private mockHtmlToTex(html: string): string {
-    // If it's already a full LaTeX document (possibly wrapped in <p> by the editor), don't wrap it
-    const plainText = html.replace(/<[^>]*>/g, '').trim();
-    if (plainText.startsWith('\\documentclass')) {
-      return plainText;
-    }
-
-    let tex = html
-      .replace(/<p>/g, '')
-      .replace(/<\/p>/g, '\n\n')
-      .replace(/<strong>/g, '\\textbf{')
-      .replace(/<\/strong>/g, '}')
-      .replace(/<em>/g, '\\textit{')
-      .replace(/<\/em>/g, '}')
-      .replace(/&nbsp;/g, '~');
-
-    // Simulate finding our custom nodes
-    // Note: The TokenNode extension will render something wrapping these values, 
-    // but the raw HTML usually contains the value.
-
-    return `\\documentclass{article}
-\\usepackage{kotex}
-\\setmainhangulfont{NanumGothic}
-\\begin{document}
-${tex.trim()}
-\\end{document}`;
-  }
 
   public getCurrentPdfUrl(): string {
     // Returns a dummy PDF URL based on success state

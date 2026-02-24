@@ -10,11 +10,14 @@ View your app in AI Studio: https://ai.studio/apps/drive/1XVgZiIa-u5blDlz1dX1N3d
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:**  Node.js (LTS), Bun
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+   `bun install`
+2. Build the WASM dependency (from project root):
+   `cd crates/hot && npm run build`
 3. Run the app:
-   `npm run dev`
+   `bun dev`
+
+### 🏗️ Architecture
+Tiptex Web is a React SPA powered by **Vite**. It encapsulates the **HOT WASM SDK** to perform local TeX/HTML conversions without server roundtrips, ensuring a snappy editing experience.

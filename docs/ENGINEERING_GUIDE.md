@@ -83,7 +83,7 @@ HOT handles these tokens by:
 * Wrapping them so humans can't edit
 * Ensuring **zero character change** upon round-trip to TeX
 
-👉 This is handled by **Lua Filter (Jules)**.
+👉 This is handled by the **Rust/WASM Core (HOT)**.
 
 ---
 
@@ -115,6 +115,8 @@ PAXEL has no state.
 * Within time limits
 * Prints PDF
 * Returns result
+
+PAXEL is a high-performance **Rust (Axum)** service.
 
 PAXEL:
 

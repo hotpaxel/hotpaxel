@@ -11,36 +11,36 @@
 
 ### Phase 0 — Repo bootstrap & Spec freeze
 - Deliverables:
-  - docs/ARCHITECTURE.md (Spec of Record)
-  - docs/DECISIONS.md (ADR-lite)
-  - docs/PLAN.md, GUIDELINES.md, AGENTS.md
+  - docs/architecture.md (Spec of Record)
+  - docs/decisions.md (ADR-lite)
+  - docs/plan.md, GUIDELINES.md, AGENTS.md
   - Monorepo skeleton + bun + turbo
 
-### Phase 1 — HOT SDK (@hotpaxel/hot)
-- Owner: Codex
+### Phase 1 — HOT SDK (@hotpaxel/hot) [COMPLETED]
+- Owner: Codex / Antigravity
 - Deliverables:
-  - HotManager API, pandoc-wasm wrapper
+  - **Rust Core**: HTML ↔ TeX conversion in Rust/WASM (replacing Pandoc)
   - SSOT invariant enforcement
   - FailureState/Recovery + Emergency Export
   - Unit tests
 
-### Phase 2 — Logic Chip Protection
-- Owner: Jules
+### Phase 2 — Logic Chip Protection [COMPLETED]
+- Owner: Jules / Antigravity
 - Deliverables:
-  - Lua filters, protected tokens
+  - **Rust/WASM Core (HOT)**: Protected tokens and round-trip conversion logic
   - Round-trip tests + known limits
 
-### Phase 3 — PAXEL Server (Rendering)
+### Phase 3 — PAXEL Server (Rendering) [COMPLETED]
 - Owner: Antigravity
 - Deliverables:
+  - **Rust/Axum**: Stateless XeLaTeX rendering service
   - Dockerized XeLaTeX (no-shell-escape, timeout, payload limits)
   - POST /compile with response codes
-  - GCS upload + signed URL
 
 ### Phase 4 — Tiptex Web Integration (Outsource included)
 - Owner: CTO (Integrator), with AI Studio (UI implementation)
 - Internal (CTO/core dev):
-  - UI Contract freeze: docs/UI_CONTRACT.md
+  - UI Contract freeze: docs/ui_contract.md
   - HOT API usage patterns & Failure UX policy finalization
 - Outsource (AI Studio):
   - React components, Tiptap UI, PDF preview UI

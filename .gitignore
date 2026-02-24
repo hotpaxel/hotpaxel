@@ -1,7 +1,17 @@
+# Dependencies
 node_modules
-.DS_Store
-dist
-.env
-.turbo
 bun.lockb
-.next
+
+# Build Artifacts
+dist
+.turbo
+target/
+pkg/
+
+# Environment & Config
+.env
+
+# Logs
+logs
+*.log
+*-debug.log*

@@ -1,9 +1,0 @@
-{
-    "name": "@hotpaxel/ui-kit",
-    "version": "0.1.0",
-    "scripts": {
-        "build": "echo 'build ui-kit'",
-        "lint": "echo 'lint ui-kit'",
-        "test": "echo 'test ui-kit'"
-    }
-}

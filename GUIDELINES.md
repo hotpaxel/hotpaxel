@@ -1,7 +1,7 @@
 # HOTPAXEL Guidelines (Human)
 
 ## Spec is Law
-- `docs/ARCHITECTURE.md` is the source of truth.
+- `docs/architecture.md` is the source of truth.
 - Changes require PR + CTO approval.
 
 ## Branch & PR
@@ -23,7 +23,7 @@
 - Add tests when implementing HOT/PAXEL core.
 
 ## Outsourcing rule (UI)
-- Outsourced UI work must follow `docs/UI_CONTRACT.md`.
+- Outsourced UI work must follow `docs/ui_contract.md`.
 - HOT API, HTML structure, protected tokens are immutable unless CTO approves.
 
 ---
@@ -107,7 +107,6 @@ Scope indicates the **impact area**.
 * `hot`
 * `paxel`
 * `tiptex-web`
-* `ui-kit`
 * `docs`
 * `repo`
 * `infra`
@@ -181,8 +180,8 @@ No changes to HOT public API.
 ### Phase 0 (Bootstrap)
 ```text
 chore(repo): initialize monorepo with bun and turborepo
-docs: add ARCHITECTURE spec as source of truth
-docs: add plan, decisions, and agent guidelines
+docs: add architecture spec as source of truth
+docs: add plan, decisions.md, and AGENTS.md guidelines
 ```
 
 ### Phase 1 (HOT SDK)
@@ -217,8 +216,8 @@ Outsourcing (AI Studio) and AI Agents must follow:
 
 * CTO can override rules if necessary.
 * EXCEPT for:
-  * `docs/ARCHITECTURE.md`
-  * `docs/UI_CONTRACT.md` (after freeze)
+  * `docs/architecture.md`
+  * `docs/ui_contract.md` (after freeze)
   → **Must have PR + Explicit approval log**
 
 ---

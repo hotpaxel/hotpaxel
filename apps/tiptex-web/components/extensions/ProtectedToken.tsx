@@ -38,13 +38,24 @@ export const ProtectedToken = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'span[data-hot-token]',
+        tag: 'span.hot-protect[data-raw]',
+        getAttrs: element => ({
+          value: element.getAttribute('data-raw'),
+          label: element.textContent,
+        })
       },
     ]
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ['span', mergeAttributes(HTMLAttributes, { 'data-hot-token': '' }), 0]
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'span', 
+      mergeAttributes(HTMLAttributes, { 
+        class: 'hot-protect',
+        'data-raw': node.attrs.value
+      }), 
+      node.attrs.label
+    ]
   },
 
   addNodeView() {

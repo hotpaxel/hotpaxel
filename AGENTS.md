@@ -1,9 +1,8 @@
 # HOTPAXEL Agent Instructions (AI)
 
-## Source of truth
-- Architecture: `docs/ARCHITECTURE.md`
-- Plan: `docs/PLAN.md`
-- UI Contract: `docs/UI_CONTRACT.md` (freeze required before Phase 4)
+- Architecture: `docs/architecture.md`
+- Plan: `docs/plan.md`
+- UI Contract: `docs/ui_contract.md` (freeze required before Phase 4)
 
 ## Do / Don't
 - DO: follow Spec; implement only assigned phase tasks; write tests for core modules.

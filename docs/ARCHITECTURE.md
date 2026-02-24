@@ -2,17 +2,20 @@
 > Changes require PR + CTO approval.
 
 # HOTPAXEL System Design Specification
-Version: 1.1.0 (Final Draft)
-Date: 2026-01-31
-Status: Approved for Implementation
+Version: 1.2.0 (Rust Refactor)
+Date: 2026-02-23
+Status: Implemented (v0.2)
 
-<!-- TODO: Insert Full Text of System Design Spec v1.1.0 here -->
-> [!NOTE]
-> The full text of the System Design Spec v1.1.0 has not yet been provided. 
-> Please update this file with the official spec text.
+## v0.2 - Rust/WASM Core Optimization
+The system has been refactored for high performance and strict reliability by transitioning the core engine and client SDK to Rust.
+
+### Component Specification
+- **PAXEL Engine**: Implemented in **Rust (Axum)**. A stateless service that executes XeLaTeX compilation in an isolated process. Replaced Node.js/Hono.
+- **HOT SDK**: Implemented in **Rust** and compiled to **WASM**. Handles HTML ↔ TeX conversion, token protection, and state management. Replaced Pandoc/Lua-based browser filters.
+- **Tiptex Interface**: Vite/React frontend integrating the WASM module for local-speed document manipulation.
 
 ---
 
 ### Reference
 For a high-level engineering understanding and team context, please refer to:
-- [Engineering Architecture Guide](file:///Users/mstorm/src/hotpaxel/docs/ENGINEERING_GUIDE.md)
+- [Engineering Architecture Guide](file:///Users/mstorm/src/hotpaxel/docs/engineering_guide.md)

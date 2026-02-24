@@ -7,12 +7,24 @@ const PAXEL_URL = '/api';
 
 export const generatePdfPreview = async (texSource: string): Promise<string> => {
     try {
+        console.log('[PAXEL] Compiling TeX:', texSource);
+        if (texSource === undefined || texSource === null) {
+            console.error('[PAXEL] texSource is null or undefined!');
+        }
+
+        const fullTex = `\\documentclass{article}
+\\usepackage{kotex}
+\\setmainhangulfont{NanumGothic}
+\\begin{document}
+${texSource}
+\\end{document}`;
+
         const response = await fetch(`${PAXEL_URL}/compile`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ tex: texSource }),
+            body: JSON.stringify({ tex: fullTex }),
         });
 
         if (!response.ok) {
