@@ -1,6 +1,6 @@
 {
     "name": "@hotpaxel/hot",
-    "version": "0.2.0-alpha.4",
+    "version": "0.2.0-alpha.5",
     "description": "High-Performance HTML ↔ TeX Converter",
     "keywords": [
         "latex",
@@ -27,7 +27,8 @@
     "scripts": {
         "build": "wasm-pack build --target web --scope hotpaxel",
         "test": "cargo test",
-        "clean": "cargo clean && rm -rf pkg .turbo"
+        "lint": "cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
+        "clean": "rm -rf pkg .turbo"
     },
     "devDependencies": {
         "wasm-pack": "^0.14.0"

@@ -26,14 +26,13 @@ impl HotConverter {
             let attr_token = html_escape::encode_double_quoted_attribute(token);
 
             html.push_str(&format!(
-                "<span class=\"hot-protect\" data-raw=\"{}\">{}</span>",
-                attr_token, escaped_token
+                "<span class=\"hot-protect\" data-raw=\"{attr_token}\">{escaped_token}</span>"
             ));
             last_end = mat.end();
         }
 
         html.push_str(&html_escape::encode_safe(&tex[last_end..]));
-        format!("<pre data-hot-tex=\"true\">{}</pre>", html)
+        format!("<pre data-hot-tex=\"true\">{html}</pre>")
     }
 
     pub fn extract_hot_tex(&self, html: &str) -> String {

@@ -5,6 +5,7 @@
         "build": "cargo build --release",
         "dev": "cargo run",
         "test": "cargo test",
-        "clean": "cargo clean && rm -rf .turbo"
+        "lint": "cargo fmt --all -- --check && cargo clippy --all-targets --all-features -- -D warnings",
+        "clean": "rm -rf .turbo"
     }
 }

@@ -14,7 +14,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
-                    message: format!("Failed to create temp dir: {}", e),
+                    message: format!("Failed to create temp dir: {e}"),
                     output: None,
                 }),
             )
@@ -29,7 +29,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
-                message: format!("Failed to write TeX file: {}", e),
+                message: format!("Failed to write TeX file: {e}"),
                 output: None,
             }),
         )
@@ -49,7 +49,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
-                    message: format!("Failed to execute xelatex: {}", e),
+                    message: format!("Failed to execute xelatex: {e}"),
                     output: None,
                 }),
             )
@@ -60,7 +60,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
     if !output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let combined_output = format!("{}\n{}", stdout, stderr);
+        let combined_output = format!("{stdout}\n{stderr}");
 
         return (
             StatusCode::BAD_REQUEST,
@@ -89,7 +89,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             .header(header::CONTENT_TYPE, "application/pdf")
             .header(
                 header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{}.pdf\"", id),
+                format!("attachment; filename=\"{id}.pdf\""),
             )
             .body(axum::body::Body::from(bytes))
             .unwrap()
@@ -97,7 +97,7 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
-                message: format!("Failed to read PDF: {}", e),
+                message: format!("Failed to read PDF: {e}"),
                 output: None,
             }),
         )

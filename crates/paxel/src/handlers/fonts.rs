@@ -10,7 +10,7 @@ pub async fn get_fonts() -> impl IntoResponse {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
-                    message: format!("Failed to execute fc-list: {}", e),
+                    message: format!("Failed to execute fc-list: {e}"),
                     output: None,
                 }),
             )
@@ -45,11 +45,8 @@ pub async fn get_fonts() -> impl IntoResponse {
 
             if parts.len() >= 3 {
                 let style_part = parts[2].trim();
-                if style_part.starts_with("style=") {
-                    styles = style_part["style=".len()..]
-                        .split(',')
-                        .map(|s| s.trim().to_string())
-                        .collect();
+                if let Some(stripped) = style_part.strip_prefix("style=") {
+                    styles = stripped.split(',').map(|s| s.trim().to_string()).collect();
                 }
             }
 
