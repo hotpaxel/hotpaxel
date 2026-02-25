@@ -301,12 +301,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Download hot package
-        uses: actions/download-artifact@v6
-        with:
-          name: hot
-          path: release-artifacts/hot
-
       - name: Download paxel-amd64
         uses: actions/download-artifact@v6
         with:
@@ -325,14 +319,35 @@ jobs:
           name: tiptex-web
           path: release-artifacts/tiptex-web
 
+      - name: Prepare release artifacts (ZIP)
+        run: |
+          # Use internal filenames as original 'paxel', but zip with descriptive names
+          cd release-artifacts/paxel-amd64 && zip ../../paxel-linux-amd64-${{ github.ref_name }}.zip paxel && cd ../..
+          cd release-artifacts/paxel-arm64 && zip ../../paxel-linux-arm64-${{ github.ref_name }}.zip paxel && cd ../..
+          cd release-artifacts/tiptex-web && zip -r ../../tiptex-web-${{ github.ref_name }}.zip ./* && cd ../..
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          body: |
+            ## 🚀 Deployment Options
+            
+            ### 📦 All-in-One (Unified)
+            Full-stack solution with Backend and Frontend integrated in a single container.
+            - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
+            
+            ### 🏗️ Server + UI (Distributed)
+            Separate components for flexible and scalable architecture.
+            - 💻 **Backend (Docker):** [ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/paxel)
+            - 🌐 **Frontend (Docker):** [ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/tiptex-web)
+            - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
+            
+            ### 📚 Library & SDK
+            - 📦 **NPM Package:** [@hotpaxel/hot](https://www.npmjs.com/package/@hotpaxel/hot)
           files: |
-            release-artifacts/hot/*
-            release-artifacts/paxel-amd64/paxel
-            release-artifacts/paxel-arm64/paxel
-            release-artifacts/tiptex-web/**
+            paxel-linux-amd64-${{ github.ref_name }}.zip
+            paxel-linux-arm64-${{ github.ref_name }}.zip
+            tiptex-web-${{ github.ref_name }}.zip
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
           draft: false

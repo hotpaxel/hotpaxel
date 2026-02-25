@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0-alpha.5"
+version = "0.2.0-alpha.6"
 authors = ["Minchul Kwon <mstorm@mstorm.net>"]
 repository = "https://github.com/hotpaxel/hotpaxel"
 edition = "2021"
