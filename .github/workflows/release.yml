@@ -326,29 +326,56 @@ jobs:
           cd release-artifacts/paxel-arm64 && zip ../../paxel-linux-arm64-${{ github.ref_name }}.zip paxel && cd ../..
           cd release-artifacts/tiptex-web && zip -r ../../tiptex-web-${{ github.ref_name }}.zip ./* && cd ../..
 
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          # Fetch auto-generated notes from GitHub API
+          # This will use the categories defined in .github/release.yml
+          API_URL="https://api.github.com/repos/${{ github.repository }}/releases/generate-notes"
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            $API_URL \
+            -d "{\"tag_name\":\"${{ github.ref_name }}\"}")
+          
+          NOTES=$(echo "$RESPONSE" | jq -r '.body')
+          
+          # Prepare deployment footer
+          FOOTER="
+          ## 🚀 Deployment Options
+          
+          ### 📦 All-in-One (Unified)
+          Full-stack solution with Backend and Frontend integrated in a single container.
+          - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
+          
+          ### 🏗️ Server + UI (Distributed)
+          Separate components for flexible and scalable architecture.
+          - 💻 **Backend (Docker):** [ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/paxel)
+          - 🌐 **Frontend (Docker):** [ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/tiptex-web)
+          - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
+          
+          ### 📚 Library & SDK
+          - 📦 **NPM Package:** [@hotpaxel/hot](https://www.npmjs.com/package/@hotpaxel/hot)
+          "
+          
+          # Combine Auto Notes + Custom Footer
+          FINAL_BODY="${NOTES}${FOOTER}"
+          
+          # Escape for GitHub Actions output
+          {
+            echo "body<<EOF"
+            echo "$FINAL_BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body: |
-            ## 🚀 Deployment Options
-            
-            ### 📦 All-in-One (Unified)
-            Full-stack solution with Backend and Frontend integrated in a single container.
-            - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
-            
-            ### 🏗️ Server + UI (Distributed)
-            Separate components for flexible and scalable architecture.
-            - 💻 **Backend (Docker):** [ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/paxel)
-            - 🌐 **Frontend (Docker):** [ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/tiptex-web)
-            - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
-            
-            ### 📚 Library & SDK
-            - 📦 **NPM Package:** [@hotpaxel/hot](https://www.npmjs.com/package/@hotpaxel/hot)
+          body: ${{ steps.generate_notes.outputs.body }}
           files: |
             paxel-linux-amd64-${{ github.ref_name }}.zip
             paxel-linux-arm64-${{ github.ref_name }}.zip
             tiptex-web-${{ github.ref_name }}.zip
-          generate_release_notes: true
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')

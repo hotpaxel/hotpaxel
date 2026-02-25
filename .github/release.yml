@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - github-actions
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - "feat"
+        - "enhancement"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "fix"
+        - "bug"
+    - title: "🛠 Maintenance"
+      labels:
+        - "chore"
+        - "ci"
+        - "docs"
+        - "refactor"
