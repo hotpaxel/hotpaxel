@@ -1,0 +1,26 @@
+name: Cleanup Packages
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 매주 월요일 자정 (UTC)
+  workflow_dispatch:   # 수동 실행 지원
+
+jobs:
+  cleanup-untagged:
+    name: Cleanup Untagged Images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        package-name: [hotpaxel, paxel, tiptex-web]
+      fail-fast: false
+    steps:
+      - name: Delete untagged images for ${{ matrix.package-name }}
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ matrix.package-name }}
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'
+          token: ${{ secrets.GITHUB_TOKEN }}
