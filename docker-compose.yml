@@ -3,11 +3,10 @@ version: '3.8'
 services:
   # Tiptex Web (Frontend + Nginx)
   tiptex-web:
-    # Build locally or on server
-    # build:
-    #   context: .
-    #   dockerfile: apps/tiptex-web/Dockerfile
-    image: ghcr.io/${GH_USER:-hotpaxel}/tiptex-web:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/tiptex-web/Dockerfile
+    image: hotpaxel/tiptex-web:0.2.1-alpha.1
     ports:
       - "8888:80"
     depends_on:
@@ -15,10 +14,10 @@ services:
 
   # Phase 3 implementation
   paxel:
-    # build:
-    #   context: .
-    #   dockerfile: crates/paxel/Dockerfile
-    image: ghcr.io/${GH_USER:-hotpaxel}/paxel:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: crates/paxel/Dockerfile
+    image: hotpaxel/paxel:0.2.1-alpha.1
     # Remove public port 8888 exposure, accessed via nginx internally
     expose:
       - "8888"

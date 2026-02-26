@@ -1,5 +1,5 @@
-import React from 'react';
-import { RefreshCw, FileText, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, FileText, AlertCircle, Copy, Check } from 'lucide-react';
 
 interface PdfPreviewProps {
   url: string | null;
@@ -9,6 +9,16 @@ interface PdfPreviewProps {
 }
 
 const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefresh }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (error) {
+      navigator.clipboard.writeText(error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-100 border-l border-slate-200">
       <div className="h-10 border-b border-slate-200 bg-white px-4 flex items-center justify-between shadow-sm z-10">
@@ -38,12 +48,21 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
 
         {error && (
             <div className="absolute inset-0 z-10 bg-red-50 p-6 flex flex-col items-center justify-center overflow-auto">
-                <div className="max-w-md w-full">
-                    <div className="flex items-center gap-2 text-red-700 font-bold mb-3">
-                        <AlertCircle size={20} />
-                        <span>Compilation Error</span>
+                <div className="max-w-md w-full relative">
+                    <div className="flex items-center justify-between mb-3 text-red-700 font-bold">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle size={20} />
+                            <span>Compilation Error</span>
+                        </div>
+                        <button 
+                            onClick={handleCopy}
+                            className="bg-red-100 hover:bg-red-200 p-1.5 rounded transition-colors"
+                            title="Copy Error Output"
+                        >
+                            {copied ? <Check size={16} /> : <Copy size={16} />}
+                        </button>
                     </div>
-                    <pre className="bg-red-100 border border-red-200 p-4 rounded text-xs text-red-900 font-mono whitespace-pre-wrap break-all shadow-inner">
+                    <pre className="bg-red-100 border border-red-200 p-4 rounded text-xs text-red-900 font-mono whitespace-pre-wrap break-all shadow-inner max-h-96 overflow-y-auto">
                         {error}
                     </pre>
                     <button 

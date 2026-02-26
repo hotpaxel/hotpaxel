@@ -5,13 +5,16 @@
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
@@ -21,8 +24,11 @@
   outline: none;
   min-height: 100%;
   padding: 2rem;
-  max-width: 65ch; /* Optimal reading width */
+  max-width: 65ch;
+  /* Optimal reading width */
   margin: 0 auto;
+  font-family: var(--hot-font-family, serif);
+  font-size: var(--hot-font-size, 12pt);
 }
 
 .ProseMirror p {

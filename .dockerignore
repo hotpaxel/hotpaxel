@@ -1,9 +1,12 @@
-node_modules
-target
-pkg
+.turbo/
+.git/
+dist/
+node_modules/
+pkg/
+target/
 .env
 .DS_Store
-.turbo
 .next
 *.log
-.git
+Dockerfile*
+docker-compose.yml

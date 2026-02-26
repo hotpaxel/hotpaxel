@@ -5,8 +5,8 @@ RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 WORKDIR /app
-COPY package.json turbo.json bun.lock ./
-COPY crates/hot ./crates/hot
+COPY package.json turbo.json bun.lock Cargo.toml ./
+COPY crates ./crates
 WORKDIR /app/crates/hot
 RUN wasm-pack build --target web --release --scope hotpaxel
 

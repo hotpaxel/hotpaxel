@@ -1,6 +1,6 @@
 {
     "name": "@hotpaxel/hot",
-    "version": "0.2.0-alpha.6",
+    "version": "0.2.1-alpha.1",
     "description": "High-Performance HTML ↔ TeX Converter",
     "keywords": [
         "latex",

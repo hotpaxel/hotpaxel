@@ -11,7 +11,7 @@ pub struct ErrorResponse {
     pub output: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct FontInfo {
     pub family: String,
     pub styles: Vec<String>,

@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/li
 WORKDIR /app
 COPY package.json turbo.json bun.lock Cargo.toml ./
 COPY crates/paxel ./crates/paxel
+COPY crates/hot ./crates/hot
 
 WORKDIR /app/crates/paxel
 RUN cargo build --release

@@ -1,20 +1,38 @@
 import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { FontSize } from './extensions/FontSize';
 import { ProtectedToken } from './extensions/ProtectedToken';
 import Toolbar from './Toolbar';
 import { hotSdk } from '../services/hotSdk';
-import { SdkStatus } from '../types';
+import { SdkStatus, FontInfo } from '../types';
 
 interface EditorProps {
   initialContent: string;
   onUpdateStatus: (status: SdkStatus) => void;
+  fonts: FontInfo[];
+  selectedFont: string;
+  onFontChange: (font: string) => void;
+  selectedFontSize: string;
+  onFontSizeChange: (size: string) => void;
 }
 
-const EditorComponent: React.FC<EditorProps> = ({ initialContent }) => {
+const EditorComponent: React.FC<EditorProps> = ({ 
+  initialContent, 
+  fonts, 
+  selectedFont, 
+  onFontChange,
+  selectedFontSize,
+  onFontSizeChange
+}) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TextStyle,
+      FontFamily,
+      FontSize,
       ProtectedToken
     ],
     content: initialContent,
@@ -39,8 +57,22 @@ const EditorComponent: React.FC<EditorProps> = ({ initialContent }) => {
 
   return (
     <div className="flex flex-col h-full bg-white relative">
-      <Toolbar editor={editor} />
-      <div className="flex-1 overflow-y-auto bg-slate-50 cursor-text" onClick={() => editor?.chain().focus().run()}>
+      <Toolbar 
+        editor={editor} 
+        fonts={fonts}
+        selectedFont={selectedFont}
+        onFontChange={onFontChange}
+        selectedFontSize={selectedFontSize}
+        onFontSizeChange={onFontSizeChange}
+      />
+      <div 
+        className="flex-1 overflow-y-auto bg-slate-50 cursor-text editor-wrapper" 
+        onClick={() => editor?.chain().focus().run()}
+        style={{ 
+            '--hot-font-family': `'${selectedFont}', sans-serif`,
+            '--hot-font-size': selectedFontSize 
+        } as React.CSSProperties}
+      >
         <EditorContent editor={editor} className="min-h-full" />
       </div>
       

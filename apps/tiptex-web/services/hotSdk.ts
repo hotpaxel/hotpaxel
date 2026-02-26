@@ -41,6 +41,12 @@ class HotSdkService {
     this.listeners.add(listener);
     // Initial emit
     listener(this.status, this.state, this.error);
+
+    // Auto-trigger sync on the first subscriber so that PDF updates matching editor state
+    if (this.listeners.size === 1) {
+      this.updateHtml(this.state.html);
+    }
+
     return () => {
       this.listeners.delete(listener);
     };

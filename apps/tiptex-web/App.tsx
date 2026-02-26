@@ -17,6 +17,7 @@ const App: React.FC = () => {
   // Font State
   const [fonts, setFonts] = useState<FontInfo[]>([]);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('NanumGothic');
+  const [selectedFontSize, setSelectedFontSize] = useState<string>('12pt');
 
   // PDF Preview State
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -24,11 +25,11 @@ const App: React.FC = () => {
   const [renderError, setRenderError] = useState<string | null>(null);
 
   // Handler for PDF Generation
-  const handlePdfRefresh = useCallback(async (texSource: string, fontFamily?: string) => {
+  const handlePdfRefresh = useCallback(async (texSource: string, fontFamily?: string, fontSize?: string) => {
     setIsPdfLoading(true);
     setRenderError(null); // Clear previous errors
     try {
-      const url = await generatePdfPreview(texSource, fontFamily);
+      const url = await generatePdfPreview(texSource, fontFamily, fontSize);
       
       // Clean up previous blob URL to prevent memory leaks
       setPdfUrl(prevUrl => {
@@ -45,8 +46,32 @@ const App: React.FC = () => {
 
   // Fetch fonts on mount
   useEffect(() => {
-    fetchFonts().then(setFonts);
+    fetchFonts().then((fetchedFonts) => {
+      setFonts(fetchedFonts);
+      if (fetchedFonts.length > 0 && !fetchedFonts.find(f => f.family === selectedFontFamily)) {
+        const defaultFont = fetchedFonts.find(f => f.family.includes('Nanum')) || fetchedFonts[0];
+        setSelectedFontFamily(defaultFont.family);
+      }
+    });
   }, []);
+
+  // Dynamically inject @font-face for the loaded fonts
+  useEffect(() => {
+    if (fonts.length === 0) return;
+    
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = fonts.map(f => `
+      @font-face {
+        font-family: '${f.family}';
+        src: url('/api/fonts/download/${encodeURIComponent(f.fileName)}');
+      }
+    `).join('\n');
+    document.head.appendChild(styleEl);
+    
+    return () => {
+      document.head.removeChild(styleEl);
+    };
+  }, [fonts]);
 
   // 1. Subscribe to HOT SDK changes
   useEffect(() => {
@@ -57,12 +82,12 @@ const App: React.FC = () => {
       
       // Auto-refresh PDF logic
       if (status === SdkStatus.SUCCESS || (status === SdkStatus.IDLE && state.tex)) {
-        handlePdfRefresh(state.tex, selectedFontFamily);
+        handlePdfRefresh(state.tex, selectedFontFamily, selectedFontSize);
       }
     });
 
     return () => unsubscribe();
-  }, [handlePdfRefresh, selectedFontFamily]);
+  }, [handlePdfRefresh, selectedFontFamily, selectedFontSize]);
 
   if (!documentState) {
     return <div className="flex items-center justify-center h-screen text-slate-400">Loading HOT SDK...</div>;
@@ -76,12 +101,6 @@ const App: React.FC = () => {
         status={sdkStatus} 
         error={errorMessage} 
         version={documentState.version} 
-        fonts={fonts}
-        selectedFont={selectedFontFamily}
-        onFontChange={(f) => {
-          setSelectedFontFamily(f);
-          if (documentState.tex) handlePdfRefresh(documentState.tex, f);
-        }}
       />
 
       {/* 2. Critical Error Banner (Constraint: Must clearly show failure) */}
@@ -111,6 +130,17 @@ const App: React.FC = () => {
           <EditorComponent 
             initialContent={documentState.html}
             onUpdateStatus={setSdkStatus}
+            fonts={fonts}
+            selectedFont={selectedFontFamily}
+            onFontChange={(f) => {
+              setSelectedFontFamily(f);
+              if (documentState.tex) handlePdfRefresh(documentState.tex, f, selectedFontSize);
+            }}
+            selectedFontSize={selectedFontSize}
+            onFontSizeChange={(s) => {
+              setSelectedFontSize(s);
+              if (documentState.tex) handlePdfRefresh(documentState.tex, selectedFontFamily, s);
+            }}
           />
         </div>
 

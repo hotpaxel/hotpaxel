@@ -15,6 +15,7 @@ async fn main() {
     let app = Router::new()
         .route("/compile", post(compiler::compile_tex))
         .route("/fonts", get(fonts::get_fonts))
+        .route("/fonts/download/:file_name", get(fonts::download_font))
         .layer(tower_http::trace::TraceLayer::new_for_http());
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "8888".to_string());
