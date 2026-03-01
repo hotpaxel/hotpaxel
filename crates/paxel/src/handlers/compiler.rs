@@ -1,6 +1,8 @@
 use crate::models::{CompileRequest, ErrorResponse};
 use axum::{extract::Json, response::IntoResponse, response::Response};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use http::{header, StatusCode};
+use std::path::Path;
 use std::process::Command;
 use tempfile::tempdir;
 use tokio::fs;
@@ -34,6 +36,50 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             }),
         )
             .into_response();
+    }
+
+    // Write assets (images, etc.) to the same temp dir
+    for asset in &payload.assets {
+        // Sanitize: only use the final filename component to prevent path traversal
+        let safe_name = Path::new(&asset.name)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        if safe_name.is_empty() {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message: format!("Invalid asset filename: {}", asset.name),
+                    output: None,
+                }),
+            )
+                .into_response();
+        }
+
+        let asset_bytes = match BASE64.decode(&asset.content) {
+            Ok(b) => b,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse {
+                        message: format!("Failed to decode asset '{}': {e}", safe_name),
+                        output: None,
+                    }),
+                )
+                    .into_response();
+            }
+        };
+
+        if let Err(e) = fs::write(dir.path().join(safe_name), asset_bytes).await {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse {
+                    message: format!("Failed to write asset '{}': {e}", safe_name),
+                    output: None,
+                }),
+            )
+                .into_response();
+        }
     }
 
     // Run xelatex

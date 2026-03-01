@@ -1,8 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
+pub struct Asset {
+    /// Filename for the asset (e.g. "logo.png")
+    pub name: String,
+    /// Base64-encoded file content
+    pub content: String,
+}
+
+#[derive(Deserialize)]
 pub struct CompileRequest {
     pub tex: String,
+    /// Optional assets (images, etc.) to place alongside the .tex file
+    #[serde(default)]
+    pub assets: Vec<Asset>,
 }
 
 #[derive(Serialize)]
