@@ -82,12 +82,13 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
         }
     }
 
-    // Run xelatex
+    // Run xelatex inside the temp dir to ensure assets are found
     let output = match Command::new("xelatex")
+        .current_dir(dir.path())
         .arg("-interaction=nonstopmode")
         .arg("-halt-on-error")
-        .arg(format!("-output-directory={}", dir.path().display()))
-        .arg(&tex_path)
+        .arg("-output-directory=.")
+        .arg("document.tex")
         .output()
     {
         Ok(o) => o,
