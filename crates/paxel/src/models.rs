@@ -14,6 +14,9 @@ pub struct CompileRequest {
     /// Optional assets (images, etc.) to place alongside the .tex file
     #[serde(default)]
     pub assets: Vec<Asset>,
+    /// Number of xelatex passes (default is 2)
+    #[serde(default)]
+    pub passes: Option<u8>,
 }
 
 #[derive(Serialize)]

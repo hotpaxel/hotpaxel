@@ -83,40 +83,47 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
     }
 
     // Run xelatex inside the temp dir to ensure assets are found
-    let output = match Command::new("xelatex")
-        .current_dir(dir.path())
-        .arg("-interaction=nonstopmode")
-        .arg("-halt-on-error")
-        .arg("-output-directory=.")
-        .arg("document.tex")
-        .output()
-    {
-        Ok(o) => o,
-        Err(e) => {
+    let passes = payload.passes.unwrap_or(2);
+    let mut last_output = None;
+
+    for _ in 0..passes {
+        let output = match Command::new("xelatex")
+            .current_dir(dir.path())
+            .arg("-interaction=nonstopmode")
+            .arg("-halt-on-error")
+            .arg("-output-directory=.")
+            .arg("document.tex")
+            .output()
+        {
+            Ok(o) => o,
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        message: format!("Failed to execute xelatex: {e}"),
+                        output: None,
+                    }),
+                )
+                    .into_response()
+            }
+        };
+
+        if !output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            let combined_output = format!("{stdout}\n{stderr}");
+
             return (
-                StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
-                    message: format!("Failed to execute xelatex: {e}"),
-                    output: None,
+                    message: "LaTeX compilation failed".to_string(),
+                    output: Some(combined_output),
                 }),
             )
-                .into_response()
+                .into_response();
         }
-    };
-
-    if !output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-        let combined_output = format!("{stdout}\n{stderr}");
-
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                message: "LaTeX compilation failed".to_string(),
-                output: Some(combined_output),
-            }),
-        )
-            .into_response();
+        
+        last_output = Some(output);
     }
 
     if !pdf_path.exists() {
