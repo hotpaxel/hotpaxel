@@ -19,15 +19,15 @@ RUN wasm-pack build --target web --release --scope hotpaxel
 FROM oven/bun:1-debian AS fe-builder
 WORKDIR /app
 COPY package.json turbo.json bun.lock ./
-COPY apps/tiptex-web/package.json ./apps/tiptex-web/
+COPY apps/hot-editor/package.json ./apps/hot-editor/
 COPY crates/hot ./crates/hot
 COPY crates/paxel/package.json ./crates/paxel/
 # Copy the built WASM package from stage 1
 COPY --from=rust-builder /app/crates/hot/pkg /app/crates/hot/pkg
 
 RUN bun install
-COPY apps/tiptex-web ./apps/tiptex-web
-WORKDIR /app/apps/tiptex-web
+COPY apps/hot-editor ./apps/hot-editor
+WORKDIR /app/apps/hot-editor
 RUN bun run build
 
 # --- Stage 3: Final Runner (Unified) ---
@@ -44,10 +44,10 @@ RUN groupadd -r paxel && useradd -r -g paxel -m paxel
 COPY --from=rust-builder /app/target/release/paxel ./paxel
 
 # Copy frontend assets
-COPY --from=fe-builder /app/apps/tiptex-web/dist /var/www/html
+COPY --from=fe-builder /app/apps/hot-editor/dist /var/www/html
 
 # Copy Nginx config template
-COPY apps/tiptex-web/nginx.conf /etc/nginx/sites-available/default.template
+COPY apps/hot-editor/nginx.conf /etc/nginx/sites-available/default.template
 
 # Startup script
 RUN echo '#!/bin/sh\n\

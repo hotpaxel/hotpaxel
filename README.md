@@ -12,7 +12,7 @@ HOTPAXEL is a high-performance document generation suite where **the source of t
 - **PAXEL (Server Engine)**  
   Stateless XeLaTeX rendering engine implemented in **Rust (Axum)**. Produces PDFs under strict security and resource constraints.
 
-- **Tiptex Web (Product UI)**  
+- **Hot Editor (Product UI)**  
   A modern UI layer (**Vite/React**) that integrates the HOT WASM SDK and uses PAXEL for high-fidelity PDF generation.
 
 ## Technology Stack
@@ -28,13 +28,13 @@ HOTPAXEL is a high-performance document generation suite where **the source of t
 
 - `crates/hot` — [HOT SDK](crates/hot/README.md) (**Rust/WASM**)
 - `crates/paxel` — [Rendering Engine](crates/paxel/README.md) (**Rust/Axum**)
-- `apps/tiptex-web` — [Product UI](apps/tiptex-web/README.md) (**Vite/React**)
+- `apps/hot-editor` — [Product UI](apps/hot-editor/README.md) (**Vite/React**)
 
 ## Docker Strategy
 
 We provide 3 specialized Docker images via [GHCR](https://github.com/hotpaxel/hotpaxel/pkgs/container):
 - `hotpaxel`: Unified image with both UI and Engine.
-- `tiptex-web`: Frontend-only (Nginx).
+- `hot-editor`: Frontend-only (Nginx).
 - `paxel`: Backend-only (XeLaTeX/Rust).
 
 ## Management Commands

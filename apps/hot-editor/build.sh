@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TIPEX-WEB Image Builder
+# HOT-EDITOR Image Builder
 # Usage: ./build.sh [tag] [user]
 
 TAG=${1:-latest}
@@ -10,5 +10,5 @@ USER=${2:-hotpaxel}
 ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo "../../")
 cd "$ROOT_DIR"
 
-echo "📦 Building tiptex-web (tag: $TAG, owner: $USER)..."
-docker build --platform linux/amd64 -t ghcr.io/$USER/tiptex-web:$TAG -f apps/tiptex-web/Dockerfile .
+echo "📦 Building hot-editor (tag: $TAG, owner: $USER)..."
+docker build --platform linux/amd64 -t ghcr.io/$USER/hot-editor:$TAG -f apps/hot-editor/Dockerfile .

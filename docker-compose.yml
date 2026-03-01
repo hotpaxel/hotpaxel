@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  # Tiptex Web (Frontend + Nginx)
-  tiptex-web:
+  # Hot Editor (Frontend + Nginx)
+  hot-editor:
     build:
       context: .
-      dockerfile: apps/tiptex-web/Dockerfile
-    image: hotpaxel/tiptex-web:0.2.1-alpha.1
+      dockerfile: apps/hot-editor/Dockerfile
+    image: hotpaxel/hot-editor:0.2.1-alpha.1
     ports:
       - "8888:80"
     depends_on:

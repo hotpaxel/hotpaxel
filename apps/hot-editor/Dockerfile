@@ -17,11 +17,11 @@ WORKDIR /app
 
 # Copy monorepo config
 COPY package.json turbo.json bun.lock Cargo.toml ./
-COPY apps/tiptex-web/package.json ./apps/tiptex-web/
+COPY apps/hot-editor/package.json ./apps/hot-editor/
 COPY crates/hot/package.json ./crates/hot/
 
 # Copy full source (excluding what's in .dockerignore, like pkg)
-COPY apps/tiptex-web ./apps/tiptex-web
+COPY apps/hot-editor ./apps/hot-editor
 COPY crates/hot ./crates/hot
 
 # Explicitly copy built WASM package (so it's not overwritten/missing)
@@ -31,17 +31,17 @@ COPY --from=wasm-builder /app/crates/hot/pkg /app/crates/hot/pkg
 RUN bun install
 
 # Build
-WORKDIR /app/apps/tiptex-web
+WORKDIR /app/apps/hot-editor
 RUN bun run build
 
 # --- Stage 2: Run ---
 FROM nginx:stable-alpine
 
 # Copy built assets
-COPY --from=builder /app/apps/tiptex-web/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/hot-editor/dist /usr/share/nginx/html
 
 # Copy Nginx config template
-COPY apps/tiptex-web/nginx.conf /etc/nginx/templates/default.conf.template
+COPY apps/hot-editor/nginx.conf /etc/nginx/templates/default.conf.template
 
 ENV PAXEL_HOST=paxel
 

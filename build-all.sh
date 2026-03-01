@@ -12,7 +12,7 @@ echo "🚀 Starting modular image build pipeline (Tag: $TAG, User: $USER)..."
 ./build.sh "$TAG" "$USER" || exit 1
 
 # 2. Frontend image
-./apps/tiptex-web/build.sh "$TAG" "$USER" || exit 1
+./apps/hot-editor/build.sh "$TAG" "$USER" || exit 1
 
 # 3. Backend image
 ./crates/paxel/build.sh "$TAG" "$USER" || exit 1

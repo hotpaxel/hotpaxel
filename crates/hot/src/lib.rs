@@ -2,6 +2,12 @@ use regex::Regex;
 use wasm_bindgen::prelude::*;
 use lazy_static::lazy_static;
 
+pub mod ir;
+pub mod traits;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod client;
+
 lazy_static! {
     static ref LOGIC_REGEX: Regex = Regex::new(r"%%\s*(\{\{[\s\S]*?\}\}|\{%\s*[\s\S]*?%\})").unwrap();
     static ref PRE_REGEX: Regex = Regex::new(r#"(?i)<pre\b[^>]*?data-hot-tex=['"]true['"][^>]*?>([\s\S]*?)</pre>"#).unwrap();
