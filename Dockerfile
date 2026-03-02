@@ -29,41 +29,25 @@ COPY apps/hot-editor ./apps/hot-editor
 WORKDIR /app/apps/hot-editor
 RUN bun run build
 
-# --- Stage 3: Final Runner (Unified) ---
+# --- Stage 3: Final Runner (Single Binary) ---
 FROM makye/texlive-node:latest-24.13.0-ko
 
 WORKDIR /app
 
-# Install Nginx
+# Install dependencies (only basic ones if needed)
 USER root
-RUN apt-get update && apt-get install -y nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r paxel && useradd -r -g paxel -m paxel
 
 # Copy backend binary
 COPY --from=rust-builder /app/target/release/paxel ./paxel
 
-# Copy frontend assets
-COPY --from=fe-builder /app/apps/hot-editor/dist /var/www/html
-
-# Copy Nginx config template
-COPY nginx.conf /etc/nginx/sites-available/default.template
-
-# Startup script
-RUN echo '#!/bin/sh\n\
-    export PAXEL_API=http://localhost:8888\n\
-    envsubst "\$PAXEL_API" < /etc/nginx/sites-available/default.template > /etc/nginx/sites-enabled/default\n\
-    if [ "$ENABLE_UI" = "false" ]; then \n\
-    echo "🎨 UI is disabled (ENABLE_UI=false). Starting API server only..." \n\
-    ./paxel \n\
-    else \n\
-    echo "🚀 Starting Full-Stack (Server + Editor UI)..." \n\
-    nginx -g "daemon off;" & \n\
-    ./paxel \n\
-    fi' > /app/start.sh && chmod +x /app/start.sh
-
-ENV ENABLE_UI=true
+# Copy frontend assets to ./public
+COPY --from=fe-builder /app/apps/hot-editor/dist ./public
 
 ENV PORT=8888
-EXPOSE 80 8888
+ENV STATIC_DIR=./public
+EXPOSE 8888
 
-CMD ["/app/start.sh"]
+# Run the single binary
+CMD ["./paxel", "--port", "8888", "--static-dir", "./public"]

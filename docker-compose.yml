@@ -5,9 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8888:80"   # UI (Nginx)
-      - "8889:8888" # API (Axum)
+      - "8888:8888" # Unified Port (API + UI)
     environment:
-      - ENABLE_UI=true
-      - PAXEL_API=http://localhost:8888
+      - PORT=8888
+      - STATIC_DIR=./public
+      - DISABLE_UI=false
     restart: always
