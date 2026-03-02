@@ -9,9 +9,41 @@ pub struct HtmlParser;
 impl HotParser for HtmlParser {
     fn parse(&self, input: &str) -> Vec<HotNode> {
         let fragment = Html::parse_fragment(input);
-        fragment.tree.root().children()
-            .filter_map(|node| self.parse_node(node))
-            .collect()
+        let mut nodes = Vec::new();
+        
+        let root = fragment.tree.root();
+        
+        // Scraper might wrap results in html/body. We want to skip them if they are implicit.
+        let mut current_nodes = root.children().collect::<Vec<_>>();
+        
+        // If there's only one child and it's <html>, dive in.
+        if current_nodes.len() == 1 {
+            if let Some(e) = current_nodes[0].value().as_element() {
+                if e.name() == "html" || e.name() == "body" {
+                    current_nodes = current_nodes[0].children().collect();
+                }
+            }
+        }
+        
+        // Again for body if we were in html
+        if current_nodes.len() == 1 {
+            if let Some(e) = current_nodes[0].value().as_element() {
+                if e.name() == "body" {
+                    current_nodes = current_nodes[0].children().collect();
+                }
+            }
+        }
+
+        for node in current_nodes {
+            if let Some(hot_node) = self.parse_node(node) {
+                // Ignore top-level empty text nodes
+                if let HotNode::Text(t) = &hot_node {
+                    if t.trim().is_empty() { continue; }
+                }
+                nodes.push(hot_node);
+            }
+        }
+        nodes
     }
 }
 
@@ -77,10 +109,10 @@ impl HtmlParser {
         let mut style = HotStyle::default();
         let mut found = false;
 
-        let re_family = Regex::new(r"font-family:\s*([^;]+)").unwrap();
-        let re_size = Regex::new(r"font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap();
-        let re_align = Regex::new(r"text-align:\s*(left|center|right|justify)").unwrap();
-        let re_deco = Regex::new(r"text-decoration:\s*(underline|line-through)").unwrap();
+        let re_family = Regex::new(r"(?i)font-family:\s*([^;]+)").unwrap();
+        let re_size = Regex::new(r"(?i)font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap();
+        let re_align = Regex::new(r"(?i)text-align:\s*(left|center|right|justify)").unwrap();
+        let re_deco = Regex::new(r"(?i)text-decoration:\s*(underline|line-through)").unwrap();
 
         if let Some(caps) = re_family.captures(style_str) {
             style.font_family = Some(caps[1].trim().to_string());
@@ -109,5 +141,52 @@ impl HtmlParser {
         }
 
         if found { Some(style) } else { None }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_simple_html() {
+        let parser = HtmlParser;
+        let html = "<h1>Title</h1><p>Text with <strong>bold</strong> and <em>italic</em>.</p>";
+        let nodes = parser.parse(html);
+        println!("Nodes: {:?}", nodes);
+        
+        // scraper might wrap fragments or have empty text nodes
+        let filtered_nodes: Vec<_> = nodes.into_iter().filter(|n| !matches!(n, HotNode::Text(t) if t.trim().is_empty())).collect();
+        assert!(filtered_nodes.len() >= 2);
+    }
+
+    #[test]
+    fn test_parse_styled_span() {
+        let parser = HtmlParser;
+        let html = r#"<span style="font-family: Arial; font-size: 14pt; text-align: center;">Centered Text</span>"#;
+        let nodes = parser.parse(html);
+        
+        assert_eq!(nodes.len(), 1);
+        if let HotNode::Styled { style, .. } = &nodes[0] {
+            assert_eq!(style.font_family.as_deref(), Some("Arial"));
+            assert_eq!(style.font_size, Some(14.0));
+            assert_eq!(style.text_align, Some(Align::Center));
+        } else {
+            panic!("Expected Styled node");
+        }
+    }
+
+    #[test]
+    fn test_parse_list() {
+        let parser = HtmlParser;
+        let html = "<ul><li>Item 1</li><li>Item 2</li></ul>";
+        let nodes = parser.parse(html);
+        
+        assert_eq!(nodes.len(), 1);
+        if let HotNode::List { ordered, items } = &nodes[0] {
+            assert_eq!(*ordered, false);
+            assert_eq!(items.len(), 2);
+        } else {
+            panic!("Expected List node");
+        }
     }
 }

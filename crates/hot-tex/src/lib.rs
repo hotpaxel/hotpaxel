@@ -85,3 +85,47 @@ impl TexRenderer {
             .replace(sentinel, "\\textbackslash{}")
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hot_core::ir::{HotStyle, Align};
+
+    #[test]
+    fn test_render_simple() {
+        let renderer = TexRenderer;
+        let nodes = vec![
+            HotNode::Heading { level: 1, children: vec![HotNode::Text("Title".to_string())] },
+            HotNode::Text("Hello ".to_string()),
+            HotNode::Bold(vec![HotNode::Text("World".to_string())]),
+        ];
+        let out = renderer.render(&nodes);
+        assert!(out.contains("\\section*{Title}"));
+        assert!(out.contains("\\textbf{World}"));
+    }
+
+    #[test]
+    fn test_render_styled() {
+        let renderer = TexRenderer;
+        let nodes = vec![HotNode::Styled {
+            style: HotStyle {
+                font_family: Some("Arial".to_string()),
+                font_size: Some(14.0),
+                text_align: Some(Align::Center),
+                ..Default::default()
+            },
+            children: vec![HotNode::Text("Styled".to_string())],
+        }];
+        let out = renderer.render(&nodes);
+        assert!(out.contains("\\fontspec{Arial}"));
+        assert!(out.contains("\\fontsize{14pt}"));
+        assert!(out.contains("\\begin{center}"));
+    }
+
+    #[test]
+    fn test_escape() {
+        let renderer = TexRenderer;
+        let nodes = vec![HotNode::Text("Special characters: % $ & _ { }".to_string())];
+        let out = renderer.render(&nodes);
+        assert!(out.contains("\\% \\$ \\& \\_ \\{ \\}"));
+    }
+}

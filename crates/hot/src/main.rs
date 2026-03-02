@@ -61,12 +61,20 @@ fn main() {
 
     match cli.command {
         Commands::Compile { input, output, passes, from } => {
-            let tex = if from == "tex" || (from == "auto" && input.extension().map_or(false, |e| e == "tex")) {
+            let mut tex = if from == "tex" || (from == "auto" && input.extension().map_or(false, |e| e == "tex")) {
                 fs::read_to_string(&input).expect("Failed to read input file")
             } else {
                 // Convert to TeX first using plugins
                 self::convert_to_tex(&input, &from)
             };
+
+            // If it doesn't look like a full document, wrap it
+            if !tex.contains("\\documentclass") {
+                tex = format!(
+                    "\\documentclass{{article}}\n\\usepackage{{kotex}}\n\\usepackage{{fontspec}}\n\\usepackage{{enumitem}}\n\\usepackage{{graphicx}}\n\\usepackage{{ulem}}\n\\begin{{document}}\n{}\n\\end{{document}}",
+                    tex
+                );
+            }
 
             println!("ℹ  Compiling {}...", input.display());
             match client.compile(tex, Some(passes)) {
