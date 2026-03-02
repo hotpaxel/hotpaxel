@@ -1,8 +1,7 @@
 use clap::{Parser, Subcommand};
 use hot::client::PaxelClient;
-use hot::HotConverter;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 #[derive(Parser)]
@@ -54,6 +53,8 @@ enum Commands {
     },
 }
 
+use hot_core::traits::{Parser as _, Renderer as _};
+
 fn main() {
     let cli = Cli::parse();
     let client = PaxelClient::new(cli.host);
@@ -63,15 +64,8 @@ fn main() {
             let tex = if from == "tex" || (from == "auto" && input.extension().map_or(false, |e| e == "tex")) {
                 fs::read_to_string(&input).expect("Failed to read input file")
             } else {
-                // Convert to TeX first
-                let html = fs::read_to_string(&input).expect("Failed to read input file");
-                let converter = HotConverter::new().unwrap();
-                // If it's already wrapped in <pre data-hot-tex="true">, extract it
-                if html.contains("data-hot-tex=\"true\"") {
-                    converter.extract_hot_tex(&html)
-                } else {
-                    converter.extract_hot_tex(&format!("<pre data-hot-tex=\"true\">{}</pre>", html))
-                }
+                // Convert to TeX first using plugins
+                self::convert_to_tex(&input, &from)
             };
 
             println!("ℹ  Compiling {}...", input.display());
@@ -87,22 +81,17 @@ fn main() {
                 }
             }
         }
-        Commands::Convert { input, output, from: _ } => {
-            let content = fs::read_to_string(&input).expect("Failed to read input file");
-            let converter = HotConverter::new().unwrap();
-            let tex = if content.contains("data-hot-tex=\"true\"") {
-                converter.extract_hot_tex(&content)
-            } else {
-                converter.extract_hot_tex(&format!("<pre data-hot-tex=\"true\">{}</pre>", content))
-            };
+        Commands::Convert { input, output, from } => {
+            let tex = self::convert_to_tex(&input, &from);
 
             if let Some(out_path) = output {
-                fs::write(&out_path, tex).expect("Failed to write output file");
+                fs::write(&out_path, &tex).expect("Failed to write output file");
                 println!("✔  Converted → {}", out_path.display());
             } else {
                 println!("{}", tex);
             }
         }
+        // ... Fonts and FontDownload remain the same
         Commands::Fonts => {
             match client.list_fonts() {
                 Ok(fonts) => {
@@ -133,4 +122,29 @@ fn main() {
             }
         }
     }
+}
+
+fn convert_to_tex(input: &Path, from: &str) -> String {
+    let content = fs::read_to_string(input).expect("Failed to read input file");
+    let ext = input.extension().and_then(|e| e.to_str()).unwrap_or("");
+    
+    let format = if from == "auto" {
+        if ext == "md" || ext == "markdown" { "markdown" } else { "html" }
+    } else {
+        from
+    };
+
+    let nodes = match format {
+        "markdown" => {
+            let parser = hot_markdown::MarkdownParser;
+            parser.parse(&content)
+        }
+        _ => {
+            let parser = hot_html::HtmlParser;
+            parser.parse(&content)
+        }
+    };
+
+    let renderer = hot_tex::TexRenderer;
+    renderer.render(&nodes)
 }
