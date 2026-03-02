@@ -7,4 +7,4 @@ TAG=${1:-latest}
 USER=${2:-hotpaxel}
 
 echo "📦 Building hotpaxel unified (tag: $TAG, owner: $USER)..."
-docker build --platform linux/amd64 -t ghcr.io/$USER/hotpaxel:$TAG -f Dockerfile .
+docker build --platform linux/amd64 -t hotpaxel/hotpaxel:$TAG -f Dockerfile .

@@ -44,8 +44,8 @@ impl PaxelClient {
         }
     }
 
-    pub fn compile(&self, tex: String, passes: Option<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let assets = self.extract_assets(&tex)?;
+    pub fn compile(&self, mut tex: String, passes: Option<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let assets = self.extract_assets(&mut tex)?;
         let request = CompileRequest { tex, assets, passes };
 
         let resp = self.client.post(format!("{}/compile", self.host))
@@ -77,26 +77,58 @@ impl PaxelClient {
         }
     }
 
-    fn extract_assets(&self, tex: &str) -> Result<Vec<Asset>, Box<dyn std::error::Error>> {
+    fn extract_assets(&self, tex: &mut String) -> Result<Vec<Asset>, Box<dyn std::error::Error>> {
         let re = Regex::new(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")?;
-        let mut asset_names = HashSet::new();
+        let mut remote_mappings = Vec::new();
+        let mut assets = Vec::new();
+        let mut processed_names = HashSet::new();
+
         for cap in re.captures_iter(tex) {
-            asset_names.insert(cap[1].to_string());
+            let original_name = cap[1].to_string();
+            if processed_names.contains(&original_name) {
+                continue;
+            }
+
+            if original_name.starts_with("http://") || original_name.starts_with("https://") {
+                // Remote asset: download and give it a safe name
+                match self.client.get(&original_name).send() {
+                    Ok(resp) if resp.status().is_success() => {
+                        let bytes = resp.bytes()?.to_vec();
+                        // Use a hash or simple unique name to avoid path issues
+                        let ext = original_name.split('.').last().unwrap_or("bin");
+                        let safe_name = format!("remote_{}.{}", processed_names.len(), ext);
+                        
+                        assets.push(Asset {
+                            name: safe_name.clone(),
+                            content: BASE64.encode(bytes),
+                        });
+                        remote_mappings.push((original_name.clone(), safe_name));
+                    }
+                    _ => {
+                        eprintln!("Warning: Failed to download remote asset: {}", original_name);
+                    }
+                }
+            } else {
+                // Local asset
+                let path = Path::new(&original_name);
+                if path.exists() {
+                    let bytes = fs::read(path)?;
+                    assets.push(Asset {
+                        name: original_name.clone(),
+                        content: BASE64.encode(bytes),
+                    });
+                } else {
+                    eprintln!("Warning: Local asset not found: {}", original_name);
+                }
+            }
+            processed_names.insert(original_name);
         }
 
-        let mut assets = Vec::new();
-        for name in asset_names {
-            let path = Path::new(&name);
-            if path.exists() {
-                let bytes = fs::read(path)?;
-                assets.push(Asset {
-                    name,
-                    content: BASE64.encode(bytes),
-                });
-            } else {
-                eprintln!("Warning: Asset not found: {}", name);
-            }
+        // Replace remote URLs in TeX with safe names
+        for (url, safe_name) in remote_mappings {
+            *tex = tex.replace(&url, &safe_name);
         }
+
         Ok(assets)
     }
 }

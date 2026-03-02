@@ -19,9 +19,8 @@ RUN wasm-pack build --target web --release --scope hotpaxel
 FROM oven/bun:1-debian AS fe-builder
 WORKDIR /app
 COPY package.json turbo.json bun.lock ./
+COPY crates ./crates
 COPY apps/hot-editor/package.json ./apps/hot-editor/
-COPY crates/hot ./crates/hot
-COPY crates/paxel/package.json ./crates/paxel/
 # Copy the built WASM package from stage 1
 COPY --from=rust-builder /app/crates/hot/pkg /app/crates/hot/pkg
 
@@ -47,14 +46,22 @@ COPY --from=rust-builder /app/target/release/paxel ./paxel
 COPY --from=fe-builder /app/apps/hot-editor/dist /var/www/html
 
 # Copy Nginx config template
-COPY apps/hot-editor/nginx.conf /etc/nginx/sites-available/default.template
+COPY nginx.conf /etc/nginx/sites-available/default.template
 
 # Startup script
 RUN echo '#!/bin/sh\n\
-    export PAXEL_HOST=localhost\n\
-    envsubst "\$PAXEL_HOST" < /etc/nginx/sites-available/default.template > /etc/nginx/sites-enabled/default\n\
+    export PAXEL_API=http://localhost:8888\n\
+    envsubst "\$PAXEL_API" < /etc/nginx/sites-available/default.template > /etc/nginx/sites-enabled/default\n\
+    if [ "$ENABLE_UI" = "false" ]; then \n\
+    echo "🎨 UI is disabled (ENABLE_UI=false). Starting API server only..." \n\
+    ./paxel \n\
+    else \n\
+    echo "🚀 Starting Full-Stack (Server + Editor UI)..." \n\
     nginx -g "daemon off;" & \n\
-    ./paxel' > /app/start.sh && chmod +x /app/start.sh
+    ./paxel \n\
+    fi' > /app/start.sh && chmod +x /app/start.sh
+
+ENV ENABLE_UI=true
 
 ENV PORT=8888
 EXPOSE 80 8888

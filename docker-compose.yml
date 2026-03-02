@@ -1,32 +1,13 @@
-version: '3.8'
-
 services:
-  # Hot Editor (Frontend + Nginx)
-  hot-editor:
+  hotpaxel:
+    image: hotpaxel/hotpaxel:0.2.1-alpha.1
     build:
       context: .
-      dockerfile: apps/hot-editor/Dockerfile
-    image: hotpaxel/hot-editor:0.2.1-alpha.1
+      dockerfile: Dockerfile
     ports:
-      - "8888:80"
-    depends_on:
-      - paxel
-
-  # Phase 3 implementation
-  paxel:
-    build:
-      context: .
-      dockerfile: crates/paxel/Dockerfile
-    image: hotpaxel/paxel:0.2.1-alpha.1
-    # Remove public port 8888 exposure, accessed via nginx internally
-    expose:
-      - "8888"
+      - "8888:80"   # UI (Nginx)
+      - "8889:8888" # API (Axum)
     environment:
-      - PORT=8888
-      - ENABLE_ASSETS=true
-      - JOB_TIMEOUT_MS=300000
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
+      - ENABLE_UI=true
+      - PAXEL_API=http://localhost:8888
+    restart: always

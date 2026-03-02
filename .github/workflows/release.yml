@@ -141,9 +141,8 @@ jobs:
         run: npm publish --access public --tag alpha
         working-directory: crates/hot/pkg
 
-  docker-publish-hotpaxel:
+  docker-publish:
     name: Docker Publish (Hotpaxel - Unified)
-    needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -152,24 +151,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Download @hotpaxel/tiptex-web artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: tiptex-web
-          path: dist
-
-      - name: Download amd64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-amd64
-          path: artifacts/amd64
-
-      - name: Download arm64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-arm64
-          path: artifacts/arm64
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -188,7 +169,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: .docker/hotpaxel.Dockerfile
+          file: Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
@@ -197,103 +178,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  docker-publish-paxel:
-    name: Docker Publish (Paxel - Backend)
-    needs: [build-backend]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download amd64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-amd64
-          path: artifacts/amd64
-
-      - name: Download arm64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-arm64
-          path: artifacts/arm64
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Paxel (Backend)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/paxel.Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/paxel:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  docker-publish-tiptex-web:
-    name: Docker Publish (TipTeX Web - Frontend)
-    needs: [build-frontend]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download @hotpaxel/tiptex-web artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: tiptex-web
-          path: dist
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push TipTeX Web (Frontend)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/tiptex-web.Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/tiptex-web:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   github-release:
     name: Create GitHub Release
-    needs: [build-frontend, build-backend, npm-publish, docker-publish-hotpaxel, docker-publish-paxel, docker-publish-tiptex-web]
+    needs: [build-frontend, build-backend, npm-publish, docker-publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -348,10 +236,9 @@ jobs:
           Full-stack solution with Backend and Frontend integrated in a single container.
           - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           
-          ### 🏗️ Server + UI (Distributed)
-          Separate components for flexible and scalable architecture.
-          - 💻 **Backend (Docker):** [ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/paxel)
-          - 🌐 **Frontend (Docker):** [ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/tiptex-web)
+          ### 🏗️ Standalone API (Server Only)
+          Disable UI using `ENABLE_UI=false` environment variable.
+          - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
           
           ### 📚 Library & SDK
@@ -375,7 +262,6 @@ jobs:
           files: |
             paxel-linux-amd64-${{ github.ref_name }}.zip
             paxel-linux-arm64-${{ github.ref_name }}.zip
-            tiptex-web-${{ github.ref_name }}.zip
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')

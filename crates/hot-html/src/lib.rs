@@ -71,7 +71,20 @@ impl HtmlParser {
                         let alt = e.attr("alt").map(|s| s.to_string());
                         Some(HotNode::Image { path, options: alt })
                     }
+                    "br" => Some(HotNode::Raw("\\\\".to_string())),
                     "span" | "p" | "div" => {
+                        // Special case: hot-protect (used for tokens/protected content)
+                        if e.attr("class").map_or(false, |c| c.contains("hot-protect")) {
+                            if let Some(raw) = e.attr("data-raw") {
+                                return Some(HotNode::Raw(raw.to_string()));
+                            }
+                        }
+
+                        // Special case: empty paragraph (br or whitespace only)
+                        if name == "p" && self.is_effectively_empty(&children) {
+                            return Some(HotNode::Raw("\\par\\vspace{1em}\\par".to_string()));
+                        }
+
                         let style = self.parse_style(e.attr("style").unwrap_or(""));
                         if let Some(s) = style {
                             Some(HotNode::Styled { style: s, children })
@@ -84,6 +97,16 @@ impl HtmlParser {
             }
             _ => None,
         }
+    }
+
+    fn is_effectively_empty(&self, nodes: &[HotNode]) -> bool {
+        if nodes.is_empty() { return true; }
+        nodes.iter().all(|n| match n {
+            HotNode::Text(t) => t.trim().is_empty() || t == "\u{a0}",
+            HotNode::Raw(r) => r == "\\\\", // Treat standalone <br> as empty for p-wrapping
+            HotNode::Styled { children, .. } => self.is_effectively_empty(children),
+            _ => false,
+        })
     }
 
     fn parse_list_items(&self, node: NodeRef<Node>) -> Vec<Vec<HotNode>> {
