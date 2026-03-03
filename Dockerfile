@@ -26,7 +26,14 @@ RUN bun install
 WORKDIR /app/apps/hot-editor
 RUN bun run build
 
-# --- Stage 3: Final Runner (Single Binary) ---
+# --- Stage 3: Build API Documentation ---
+FROM fe-builder AS docs-builder
+WORKDIR /app
+# buf needs either a binary or we can use the npx version. 
+# Since this is a debian-based bun image, we can run npx.
+RUN bun run gen:docs
+
+# --- Stage 4: Final Runner (Single Binary) ---
 FROM makye/texlive-node:latest-24.13.0-ko
 
 WORKDIR /app
@@ -42,9 +49,13 @@ COPY --from=rust-builder /app/target/release/paxel ./paxel
 # Copy frontend assets to ./public
 COPY --from=fe-builder /app/apps/hot-editor/dist ./public
 
+# Copy API documentation to ./docs
+COPY --from=docs-builder /app/apps/docs ./docs
+
 ENV PORT=8888
 ENV STATIC_DIR=./public
+ENV DOCS_DIR=./docs
 EXPOSE 8888
 
 # Run the single binary
-CMD ["./paxel", "--port", "8888", "--static-dir", "./public"]
+CMD ["./paxel", "--port", "8888", "--static-dir", "./public", "--docs-dir", "./docs"]

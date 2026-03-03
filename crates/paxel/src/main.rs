@@ -31,6 +31,14 @@ struct Args {
     /// Disable UI serving
     #[arg(long, env = "DISABLE_UI", default_value_t = false)]
     disable_ui: bool,
+
+    /// Directory to serve documentation from
+    #[arg(long, env = "DOCS_DIR", default_value = "./docs")]
+    docs_dir: String,
+
+    /// Disable API documentation serving
+    #[arg(long, env = "DISABLE_DOCS", default_value_t = false)]
+    disable_docs: bool,
 }
 
 #[tokio::main]
@@ -54,6 +62,21 @@ async fn main() {
                 }))
             }),
         );
+
+    // API Documentation Serving
+    if !args.disable_docs {
+        let docs_path = PathBuf::from(&args.docs_dir);
+        if docs_path.exists() {
+            tracing::info!("Serving API documentation from: {:?}", docs_path);
+            let serve_docs = ServeDir::new(&docs_path);
+            app = app.nest_service("/docs", serve_docs);
+        } else {
+            tracing::warn!(
+                "Documentation directory {:?} not found, /docs serving disabled.",
+                docs_path
+            );
+        }
+    }
 
     // UI Serving
     if !args.disable_ui {
