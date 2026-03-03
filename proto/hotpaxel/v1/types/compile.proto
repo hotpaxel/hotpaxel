@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package hotpaxel.v1;
+option go_package = "hotpaxel/v1";
 
 import "hotpaxel/v1/types/asset.proto";
 
