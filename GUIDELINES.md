@@ -106,7 +106,7 @@ Scope indicates the **impact area**.
 ### Recommended Scopes
 * `hot`
 * `paxel`
-* `tiptex-web`
+* `hot-editor`
 * `docs`
 * `repo`
 * `infra`
