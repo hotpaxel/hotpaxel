@@ -9,7 +9,7 @@
 | [hot](file:///Users/mstorm/src/hotpaxel/crates/hot/src/lib.rs#49-68)의 정체성 부재 | HTML↔TeX 변환 라이브러리일 뿐, 클라이언트 역할을 하지 않음 |
 | 변환 엔진이 정규식 30개 | 중첩 태그, 복합 스타일 처리 불가. 확장/유지보수 어려움 |
 | CLI가 쉘 스크립트 | macOS/Linux 호환 문제(`grep -P`), `jq` 등 외부 의존성 |
-| `tiptex-web` 네이밍 | 내부 구현 기술(Tiptap)을 드러내는 이름, 예제 앱 성격에 안 맞음 |
+| `hot-editor` 네이밍 | 에디터 예제 앱 성격에 맞는 직관적인 이름으로 변경 완료 (← tiptex-web) |
 | xelatex 1회 실행 | 페이지 번호, 목차, 상호참조가 `??`로 표시됨 |
 
 ## 목표 구조

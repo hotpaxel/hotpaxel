@@ -1,6 +1,6 @@
-# TipTeX Web
+# HotPaxel Editor
 
-TipTeX Web is a modern React Single Page Application (SPA) powered by Vite. It serves as the primary frontend for the HotPaxel project, providing a rich, interactive WYSIWYG editor for LaTeX using TipTap.
+HotPaxel Editor is a modern React Single Page Application (SPA) powered by Vite. It serves as the primary frontend for the HotPaxel project, providing a rich, interactive WYSIWYG editor for LaTeX using TipTap.
 
 ## Features
 - **Rich Text Editing**: Powered by TipTap, allowing users to write and format text visually.
@@ -28,7 +28,7 @@ We recommend running the development server from the monorepo root using Turbore
     ```bash
     bun run dev
     # OR to build specifically:
-    # turbo run dev --filter=@hotpaxel/tiptex-web
+    # turbo run dev --filter=@hotpaxel/hot-editor
     ```
 
 Alternatively, if the `@hotpaxel/hot` WASM package is already built, you can run the vite server directly from this directory:

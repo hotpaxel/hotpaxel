@@ -52,15 +52,15 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build tiptex-web
+      - name: Build hot-editor
         run: bun run build
-        working-directory: apps/tiptex-web
+        working-directory: apps/hot-editor
 
-      - name: Upload @hotpaxel/tiptex-web artifact
+      - name: Upload @hotpaxel/hot-editor artifact
         uses: actions/upload-artifact@v6
         with:
-          name: tiptex-web
-          path: apps/tiptex-web/dist/
+          name: hot-editor
+          path: apps/hot-editor/dist/
 
       - name: Upload @hotpaxel/hot package artifact
         uses: actions/upload-artifact@v6
@@ -137,8 +137,19 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Determine NPM Tag
+        id: npm-tag
+        run: |
+          if [[ "${{ env.VERSION }}" == *"alpha"* ]]; then
+            echo "tag=alpha" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ env.VERSION }}" == *"beta"* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to NPM (@hotpaxel/hot)
-        run: npm publish --access public --tag alpha
+        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
         working-directory: crates/hot/pkg
 
   docker-publish:
@@ -165,6 +176,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/hotpaxel
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
+
       - name: Build and push Hotpaxel (Unified)
         uses: docker/build-push-action@v6
         with:
@@ -172,9 +192,8 @@ jobs:
           file: Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/hotpaxel:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -201,18 +220,18 @@ jobs:
           name: paxel-arm64
           path: release-artifacts/paxel-arm64
 
-      - name: Download tiptex-web
+      - name: Download hot-editor
         uses: actions/download-artifact@v6
         with:
-          name: tiptex-web
-          path: release-artifacts/tiptex-web
+          name: hot-editor
+          path: release-artifacts/hot-editor
 
       - name: Prepare release artifacts (ZIP)
         run: |
           # Use internal filenames as original 'paxel', but zip with descriptive names
           cd release-artifacts/paxel-amd64 && zip ../../paxel-linux-amd64-${{ github.ref_name }}.zip paxel && cd ../..
           cd release-artifacts/paxel-arm64 && zip ../../paxel-linux-arm64-${{ github.ref_name }}.zip paxel && cd ../..
-          cd release-artifacts/tiptex-web && zip -r ../../tiptex-web-${{ github.ref_name }}.zip ./* && cd ../..
+          cd release-artifacts/hot-editor && zip -r ../../hot-editor-${{ github.ref_name }}.zip ./* && cd ../..
 
       - name: Generate release notes
         id: generate_notes
@@ -237,7 +256,7 @@ jobs:
           - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           
           ### 🏗️ Standalone API (Server Only)
-          Disable UI using `ENABLE_UI=false` environment variable.
+          Disable UI using `DISABLE_UI=true` environment variable or `--disable-ui` flag.
           - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
           
