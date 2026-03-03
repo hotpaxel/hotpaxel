@@ -44,6 +44,12 @@ jobs:
         run: wasm-pack build --target web --release --scope hotpaxel
         working-directory: crates/hot
 
+      - name: Upload @hotpaxel/hot package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: hot
+          path: crates/hot/pkg/
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -61,12 +67,6 @@ jobs:
         with:
           name: hot-editor
           path: apps/hot-editor/dist/
-
-      - name: Upload @hotpaxel/hot package artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: hot
-          path: crates/hot/pkg/
 
   build-backend:
     name: Build Backend (${{ matrix.arch }})
