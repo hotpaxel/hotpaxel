@@ -1,44 +1,59 @@
 use crate::models::{CompileRequest, ErrorResponse};
-use axum::{extract::Json, response::IntoResponse, response::Response};
+use axum::{extract::Json, response::IntoResponse};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use http::{header, StatusCode};
+use http::StatusCode;
 use std::path::Path;
-use std::process::Command;
 use tempfile::tempdir;
 use tokio::fs;
+use tokio::process::Command;
 use uuid::Uuid;
 
 pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoResponse {
-    let id = Uuid::new_v4().to_string();
+    match execute_compilation(payload).await {
+        Ok(pdf_bytes) => (
+            StatusCode::OK,
+            [("Content-Type", "application/pdf")],
+            pdf_bytes,
+        )
+            .into_response(),
+        Err(err) => (err.status, Json(err.error)).into_response(),
+    }
+}
+
+pub struct CompilationError {
+    pub status: StatusCode,
+    pub error: ErrorResponse,
+}
+
+pub async fn execute_compilation(payload: CompileRequest) -> Result<Vec<u8>, CompilationError> {
+    let _id = Uuid::new_v4().to_string();
     let dir = match tempdir() {
         Ok(d) => d,
         Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
+            return Err(CompilationError {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                error: ErrorResponse {
                     message: format!("Failed to create temp dir: {e}"),
                     output: None,
-                }),
-            )
-                .into_response()
+                },
+            });
         }
     };
 
     let tex_path = dir.path().join("document.tex");
-    let pdf_path = dir.path().join("document.pdf");
+    let _pdf_path = dir.path().join("document.pdf");
 
     if let Err(e) = fs::write(&tex_path, payload.tex).await {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
+        return Err(CompilationError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            error: ErrorResponse {
                 message: format!("Failed to write TeX file: {e}"),
                 output: None,
-            }),
-        )
-            .into_response();
+            },
+        });
     }
 
-    // Write assets (images, etc.) to the same temp dir
+    // Write assets
     for asset in &payload.assets {
         // Sanitize: only use the final filename component to prevent path traversal
         let safe_name = Path::new(&asset.name)
@@ -46,43 +61,40 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             .and_then(|n| n.to_str())
             .unwrap_or("");
         if safe_name.is_empty() {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
+            return Err(CompilationError {
+                status: StatusCode::BAD_REQUEST,
+                error: ErrorResponse {
                     message: format!("Invalid asset filename: {}", asset.name),
                     output: None,
-                }),
-            )
-                .into_response();
+                },
+            });
         }
 
         let asset_bytes = match BASE64.decode(&asset.content) {
             Ok(b) => b,
             Err(e) => {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    Json(ErrorResponse {
+                return Err(CompilationError {
+                    status: StatusCode::BAD_REQUEST,
+                    error: ErrorResponse {
                         message: format!("Failed to decode asset '{}': {e}", safe_name),
                         output: None,
-                    }),
-                )
-                    .into_response();
+                    },
+                });
             }
         };
 
         if let Err(e) = fs::write(dir.path().join(safe_name), asset_bytes).await {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
+            return Err(CompilationError {
+                status: StatusCode::INTERNAL_SERVER_ERROR,
+                error: ErrorResponse {
                     message: format!("Failed to write asset '{}': {e}", safe_name),
                     output: None,
-                }),
-            )
-                .into_response();
+                },
+            });
         }
     }
 
-    // Run xelatex inside the temp dir to ensure assets are found
+    // Run xelatex asynchronously
     let passes = payload.passes.unwrap_or(2);
     let mut last_output = None;
 
@@ -94,67 +106,58 @@ pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoRespon
             .arg("-output-directory=.")
             .arg("document.tex")
             .output()
+            .await
         {
             Ok(o) => o,
             Err(e) => {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ErrorResponse {
+                return Err(CompilationError {
+                    status: StatusCode::INTERNAL_SERVER_ERROR,
+                    error: ErrorResponse {
                         message: format!("Failed to execute xelatex: {e}"),
                         output: None,
-                    }),
-                )
-                    .into_response()
+                    },
+                });
             }
         };
 
-        if !output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-            let combined_output = format!("{stdout}\n{stderr}");
-
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    message: "LaTeX compilation failed".to_string(),
-                    output: Some(combined_output),
-                }),
-            )
-                .into_response();
-        }
-        
         last_output = Some(output);
+        if let Some(ref o) = last_output {
+            if !o.status.success() {
+                break;
+            }
+        }
     }
 
-    if !pdf_path.exists() {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
-                message: "PDF was not generated".to_string(),
-                output: None,
-            }),
-        )
-            .into_response();
+    let output = last_output.ok_or_else(|| CompilationError {
+        status: StatusCode::INTERNAL_SERVER_ERROR,
+        error: ErrorResponse {
+            message: "No output from xelatex".to_string(),
+            output: None,
+        },
+    })?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let combined_output = format!("--- STDOUT ---\n{stdout}\n--- STDERR ---\n{stderr}");
+
+    if !output.status.success() {
+        return Err(CompilationError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            error: ErrorResponse {
+                message: "Compilation failed".to_string(),
+                output: Some(combined_output),
+            },
+        });
     }
 
-    match fs::read(&pdf_path).await {
-        Ok(bytes) => Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "application/pdf")
-            .header(
-                header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{id}.pdf\""),
-            )
-            .body(axum::body::Body::from(bytes))
-            .unwrap()
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ErrorResponse {
-                message: format!("Failed to read PDF: {e}"),
-                output: None,
-            }),
-        )
-            .into_response(),
+    match fs::read(dir.path().join("document.pdf")).await {
+        Ok(b) => Ok(b),
+        Err(e) => Err(CompilationError {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            error: ErrorResponse {
+                message: format!("Failed to read generated PDF: {e}"),
+                output: Some(combined_output),
+            },
+        }),
     }
 }

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+
+import "hotpaxel/v1/types/asset.proto";
+
+message CompileRequest {
+  string tex = 1;
+  repeated Asset assets = 2;
+  optional uint32 passes = 3;
+  repeated Asset fonts = 4; 
+}
+
+message CompileResponse {
+  oneof result {
+    bytes pdf_chunk = 1;
+    string error_message = 2;
+    string compiler_output = 3;
+  }
+}

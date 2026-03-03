@@ -1,10 +1,12 @@
 mod handlers;
 mod models;
+mod proto;
 
-use crate::handlers::{compiler, fonts};
+use crate::handlers::{compiler, fonts, grpc_compiler, grpc_font, grpc_system};
+use crate::proto::hotpaxel::v1::compiler_service_server::CompilerServiceServer;
+use crate::proto::hotpaxel::v1::font_service_server::FontServiceServer;
+use crate::proto::hotpaxel::v1::system_service_server::SystemServiceServer;
 use axum::{
-    body::Body,
-    http::{Request, Response, StatusCode},
     routing::{get, post},
     Json, Router,
 };
@@ -13,6 +15,7 @@ use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
+use http_body_util::BodyExt;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -66,7 +69,34 @@ async fn main() {
         }
     }
 
-    let app = app.layer(tower_http::trace::TraceLayer::new_for_http());
+    // gRPC Services
+    let grpc_compiler = CompilerServiceServer::new(grpc_compiler::MyCompiler {});
+    let grpc_font = FontServiceServer::new(
+        grpc_font::MyFontService {
+            static_dir: args.static_dir.clone(),
+        }
+    );
+    let grpc_system = SystemServiceServer::new(grpc_system::MySystemService {});
+
+    // For gRPC-Web support with Axum 0.7, we need to bridge the body types.
+    // Axum 0.7 uses axum::body::Body, while tonic-web expects its own BoxBody.
+    macro_rules! bridge_grpc {
+        ($svc:expr) => {
+            tower::ServiceBuilder::new()
+                .map_request(|req: http::Request<axum::body::Body>| {
+                    req.map(|body| {
+                        body.map_err(|e| tonic::Status::internal(e.to_string()))
+                            .boxed_unsync()
+                    })
+                })
+                .service(tonic_web::enable($svc))
+        };
+    }
+
+    let app = app
+        .nest_service("/hotpaxel.v1.CompilerService", bridge_grpc!(grpc_compiler))
+        .nest_service("/hotpaxel.v1.FontService", bridge_grpc!(grpc_font))
+        .nest_service("/hotpaxel.v1.SystemService", bridge_grpc!(grpc_system));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
     tracing::info!("HOTPAXEL server listening on {}", addr);

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+
+import "hotpaxel/v1/types/system.proto";
+
+service SystemService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc GetVersion(VersionRequest) returns (VersionResponse);
+}

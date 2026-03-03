@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+
+import "hotpaxel/v1/types/compile.proto";
+
+service CompilerService {
+  rpc Compile(CompileRequest) returns (stream CompileResponse);
+}

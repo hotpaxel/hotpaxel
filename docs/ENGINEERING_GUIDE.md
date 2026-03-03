@@ -2,6 +2,8 @@
 
 **(Team Understanding Document)**
 
+**[Back to README](../README.md)** | **[Architecture Spec](./architecture.md)** | **[API Reference](./api.md)** | **[UI/SDK Contract](./ui_contract.md)**
+
 ---
 
 ## 1. Why HOTPAXEL?
@@ -137,3 +139,25 @@ Tiptex Web is:
 * Not where the document is "made"
 
 Therefore, UI is **part of the architecture**, and cannot be arbitrary.
+
+---
+
+## 8. Development History & Milestones
+
+### 🚀 Phase 1-3: Core Foundation [COMPLETED]
+- Replaced Pandoc/Node.js with **Rust/WASM** for extreme performance and type-safety.
+- Established the **PAXEL** rendering server with strict timeout and security controls.
+
+### 🎨 Phase 4: HotPaxel Editor [COMPLETED]
+- Integrated the React/Tiptap editor with the HOT WASM SDK.
+- Implemented **Logic Chip Protection** for non-destructive contract editing.
+
+### 📦 Phase 6: Single Binary Integration [COMPLETED]
+- Consolidated the entire stack into a single Rust binary.
+- Removed Nginx to simplify infrastructure and Docker deployment.
+
+### 🏆 Milestone Achievements
+- [x] **Gate A**: HOT exports stable compilable TeX offline.
+- [x] **Gate B**: PAXEL compiles safely under constraints.
+- [x] **Gate C**: Full E2E integration passes contract tests.
+- [x] **Gate D**: Single binary deployment validated.

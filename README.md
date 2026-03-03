@@ -30,12 +30,12 @@ HOTPAXEL is a high-performance document generation suite where **the source of t
 - `crates/paxel` — [Rendering Engine](crates/paxel/README.md) (**Rust/Axum**)
 - `apps/hot-editor` — [Product UI](apps/hot-editor/README.md) (**Vite/React**)
 
-## Docker Strategy
+## Deployment Strategy
 
-We provide 3 specialized Docker images via [GHCR](https://github.com/hotpaxel/hotpaxel/pkgs/container):
-- `hotpaxel`: Unified image with both UI and Engine.
-- `hot-editor`: Frontend-only (Nginx).
-- `paxel`: Backend-only (XeLaTeX/Rust).
+HotPaxel is now a **Single Unified Binary** solution. The `paxel` Rust binary directly serves the `hot-editor` UI, simplifying deployment to a single process.
+
+We provide a specialized Docker image via [GHCR](https://github.com/hotpaxel/hotpaxel/pkgs/container):
+- `hotpaxel`: **Primary image.** Contains both the Rendering Engine and the Editor UI.
 
 ## Management Commands
 
@@ -47,9 +47,17 @@ We provide 3 specialized Docker images via [GHCR](https://github.com/hotpaxel/ho
 | `./build.sh` | Build the unified `hotpaxel` image |
 | `./build-all.sh` | Build all 3 core images in sequence |
 
+## Key Documentation
+
+- **[Architecture Spec](./docs/architecture.md)**: Source of truth for system design.
+- **[Engineering Guide](./docs/engineering_guide.md)**: Team context and core principles.
+- **[API Reference](./docs/api.md)**: Technical specs for Server & SDK.
+- **[UI/SDK Contract](./docs/ui_contract.md)**: Formal interface between Editor and WASM.
+- **[Deployment Guides](./docs/deployments/comparison.md)**: Instructions for OCI, GCP, and AWS.
+
 ## Engineering Principles
 
-- **Spec is Law**: Refer to `docs/architecture.md` for all technical decisions.
+- **Spec is Law**: Refer to the [Architecture Spec](./docs/architecture.md) for all technical decisions.
 - **SSOT**: The TeX source is the absolute truth; HTML is a transient view.
 - **Statelessness**: The backend never stores document state.
 

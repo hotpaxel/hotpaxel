@@ -1,7 +1,6 @@
 # HOTPAXEL Agent Instructions (AI)
 
 - Architecture: `docs/architecture.md`
-- Plan: `docs/plan.md`
 - UI Contract: `docs/ui_contract.md` (freeze required before Phase 4)
 
 ## Do / Don't

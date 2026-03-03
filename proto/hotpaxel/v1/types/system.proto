@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  string status = 1;
+}
+
+message VersionRequest {
+}
+
+message VersionResponse {
+  string name = 1;
+  string version = 2;
+}

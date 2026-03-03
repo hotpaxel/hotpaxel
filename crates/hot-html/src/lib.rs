@@ -129,23 +129,27 @@ impl HtmlParser {
     fn parse_style(&self, style_str: &str) -> Option<HotStyle> {
         if style_str.is_empty() { return None; }
         
+    fn parse_style(&self, style_str: &str) -> Option<HotStyle> {
+        if style_str.is_empty() { return None; }
+        
         let mut style = HotStyle::default();
         let mut found = false;
 
-        let re_family = Regex::new(r"(?i)font-family:\s*([^;]+)").unwrap();
-        let re_size = Regex::new(r"(?i)font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap();
-        let re_align = Regex::new(r"(?i)text-align:\s*(left|center|right|justify)").unwrap();
-        let re_deco = Regex::new(r"(?i)text-decoration:\s*(underline|line-through)").unwrap();
+        use once_cell::sync::Lazy;
+        static RE_FAMILY: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)font-family:\s*([^;]+)").unwrap());
+        static RE_SIZE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap());
+        static RE_ALIGN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)text-align:\s*(left|center|right|justify)").unwrap());
+        static RE_DECO: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)text-decoration:\s*(underline|line-through)").unwrap());
 
-        if let Some(caps) = re_family.captures(style_str) {
+        if let Some(caps) = RE_FAMILY.captures(style_str) {
             style.font_family = Some(caps[1].trim().to_string());
             found = true;
         }
-        if let Some(caps) = re_size.captures(style_str) {
+        if let Some(caps) = RE_SIZE.captures(style_str) {
             style.font_size = Some(caps[1].parse().unwrap_or(12.0));
             found = true;
         }
-        if let Some(caps) = re_align.captures(style_str) {
+        if let Some(caps) = RE_ALIGN.captures(style_str) {
             style.text_align = match &caps[1] {
                 "center" => Some(Align::Center),
                 "right" => Some(Align::Right),
@@ -154,7 +158,7 @@ impl HtmlParser {
             };
             found = true;
         }
-        if let Some(caps) = re_deco.captures(style_str) {
+        if let Some(caps) = RE_DECO.captures(style_str) {
             style.text_decoration = match &caps[1] {
                 "underline" => Some(Decoration::Underline),
                 "line-through" => Some(Decoration::LineThrough),
