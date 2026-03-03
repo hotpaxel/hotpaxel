@@ -48,19 +48,22 @@ async fn main() {
 
     let mut app = Router::new()
         // API Routes
-        .route("/compile", post(compiler::compile_tex))
-        .route("/fonts", get(fonts::get_fonts))
-        .route("/fonts/download/:file_name", get(fonts::download_font))
-        // Health & Version
-        .route("/health", get(|| async { "ok" }))
-        .route(
-            "/version",
-            get(|| async {
-                Json(json!({
-                    "version": env!("CARGO_PKG_VERSION"),
-                    "name": env!("CARGO_PKG_NAME")
-                }))
-            }),
+        .nest(
+            "/api",
+            Router::new()
+                .route("/compile", post(compiler::compile_tex))
+                .route("/fonts", get(fonts::get_fonts))
+                .route("/fonts/download/:file_name", get(fonts::download_font))
+                .route("/health", get(|| async { "ok" }))
+                .route(
+                    "/version",
+                    get(|| async {
+                        Json(json!({
+                            "version": env!("CARGO_PKG_VERSION"),
+                            "name": env!("CARGO_PKG_NAME")
+                        }))
+                    }),
+                ),
         );
 
     // API Documentation Serving
