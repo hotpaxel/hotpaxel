@@ -1,10 +1,13 @@
 use crate::proto::hotpaxel::v1::font_service_server::FontService;
-use crate::proto::hotpaxel::v1::{FontListResponse, DownloadFontRequest, FontChunk, ValidateFontRequest, ValidateFontResponse, HealthCheckRequest};
-use tonic::{Request, Response, Status};
-use tokio_stream::wrappers::UnboundedReceiverStream;
-use tokio::sync::mpsc;
+use crate::proto::hotpaxel::v1::{
+    DownloadFontRequest, FontChunk, FontListResponse, HealthCheckRequest, ValidateFontRequest,
+    ValidateFontResponse,
+};
 use std::path::Path;
 use tokio::fs;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::UnboundedReceiverStream;
+use tonic::{Request, Response, Status};
 
 pub struct MyFontService {
     pub static_dir: String,
@@ -16,9 +19,7 @@ impl FontService for MyFontService {
         &self,
         _request: Request<HealthCheckRequest>,
     ) -> Result<Response<FontListResponse>, Status> {
-        Ok(Response::new(FontListResponse {
-            fonts: vec![],
-        }))
+        Ok(Response::new(FontListResponse { fonts: vec![] }))
     }
 
     type DownloadFontStream = UnboundedReceiverStream<Result<FontChunk, Status>>;
@@ -28,7 +29,9 @@ impl FontService for MyFontService {
         request: Request<DownloadFontRequest>,
     ) -> Result<Response<Self::DownloadFontStream>, Status> {
         let req = request.into_inner();
-        let font_path = Path::new(&self.static_dir).join("fonts").join(&req.file_name);
+        let font_path = Path::new(&self.static_dir)
+            .join("fonts")
+            .join(&req.file_name);
 
         if !font_path.exists() {
             return Err(Status::not_found("Font not found"));

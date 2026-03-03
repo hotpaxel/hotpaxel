@@ -1,5 +1,7 @@
 use crate::proto::hotpaxel::v1::system_service_server::SystemService;
-use crate::proto::hotpaxel::v1::{HealthCheckRequest, HealthCheckResponse, VersionRequest, VersionResponse};
+use crate::proto::hotpaxel::v1::{
+    HealthCheckRequest, HealthCheckResponse, VersionRequest, VersionResponse,
+};
 use tonic::{Request, Response, Status};
 
 pub struct MySystemService {}

@@ -60,8 +60,15 @@ fn main() {
     let client = PaxelClient::new(cli.host);
 
     match cli.command {
-        Commands::Compile { input, output, passes, from } => {
-            let mut tex = if from == "tex" || (from == "auto" && input.extension().map_or(false, |e| e == "tex")) {
+        Commands::Compile {
+            input,
+            output,
+            passes,
+            from,
+        } => {
+            let mut tex = if from == "tex"
+                || (from == "auto" && input.extension().is_some_and(|e| e == "tex"))
+            {
                 fs::read_to_string(&input).expect("Failed to read input file")
             } else {
                 // Convert to TeX first using plugins
@@ -77,7 +84,7 @@ fn main() {
             }
 
             println!("ℹ  Compiling {}...", input.display());
-            match client.compile(tex, Some(passes)) {
+            match client.compile(tex, Some(passes), input.parent()) {
                 Ok(pdf_bytes) => {
                     let out_path = output.unwrap_or_else(|| input.with_extension("pdf"));
                     fs::write(&out_path, pdf_bytes).expect("Failed to write PDF");
@@ -89,7 +96,11 @@ fn main() {
                 }
             }
         }
-        Commands::Convert { input, output, from } => {
+        Commands::Convert {
+            input,
+            output,
+            from,
+        } => {
             let tex = self::convert_to_tex(&input, &from);
 
             if let Some(out_path) = output {
@@ -100,21 +111,24 @@ fn main() {
             }
         }
         // ... Fonts and FontDownload remain the same
-        Commands::Fonts => {
-            match client.list_fonts() {
-                Ok(fonts) => {
-                    println!("{:<20} {:<30} {}", "Family", "Styles", "Filename");
-                    println!("{:-<70}", "");
-                    for font in fonts {
-                        println!("{:<20} {:<30} {}", font.family, font.styles.join(", "), font.file_name);
-                    }
-                }
-                Err(e) => {
-                    eprintln!("✗  Failed to list fonts: {}", e);
-                    process::exit(1);
+        Commands::Fonts => match client.list_fonts() {
+            Ok(fonts) => {
+                println!("{:<20} {:<30} Filename", "Family", "Styles");
+                println!("{:-<70}", "");
+                for font in fonts {
+                    println!(
+                        "{:<20} {:<30} {}",
+                        font.family,
+                        font.styles.join(", "),
+                        font.file_name
+                    );
                 }
             }
-        }
+            Err(e) => {
+                eprintln!("✗  Failed to list fonts: {}", e);
+                process::exit(1);
+            }
+        },
         Commands::FontDownload { name, output } => {
             println!("ℹ  Downloading {}...", name);
             match client.download_font(&name) {
@@ -135,9 +149,13 @@ fn main() {
 fn convert_to_tex(input: &Path, from: &str) -> String {
     let content = fs::read_to_string(input).expect("Failed to read input file");
     let ext = input.extension().and_then(|e| e.to_str()).unwrap_or("");
-    
+
     let format = if from == "auto" {
-        if ext == "md" || ext == "markdown" { "markdown" } else { "html" }
+        if ext == "md" || ext == "markdown" {
+            "markdown"
+        } else {
+            "html"
+        }
     } else {
         from
     };

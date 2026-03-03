@@ -3,10 +3,10 @@ use crate::models::CompileRequest as RestCompileRequest;
 use crate::proto::hotpaxel::v1::compile_response::Result as ProtoResult;
 use crate::proto::hotpaxel::v1::compiler_service_server::CompilerService;
 use crate::proto::hotpaxel::v1::{CompileRequest, CompileResponse};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 
 pub struct MyCompiler {}
 
@@ -24,23 +24,31 @@ impl CompilerService for MyCompiler {
         tokio::spawn(async move {
             let rest_req = RestCompileRequest {
                 tex: req.tex,
-                assets: req.assets.into_iter().map(|a| crate::models::Asset {
-                    name: a.name,
-                    content: BASE64.encode(a.content),
-                }).collect(),
+                assets: req
+                    .assets
+                    .into_iter()
+                    .map(|a| crate::models::Asset {
+                        name: a.name,
+                        content: BASE64.encode(a.content),
+                    })
+                    .collect(),
                 passes: req.passes.map(|p| p as u8),
             };
 
             match execute_compilation(rest_req).await {
                 Ok(pdf_bytes) => {
-                    let _ = tx.send(Ok(CompileResponse {
-                        result: Some(ProtoResult::PdfChunk(pdf_bytes)),
-                    })).await;
+                    let _ = tx
+                        .send(Ok(CompileResponse {
+                            result: Some(ProtoResult::PdfChunk(pdf_bytes)),
+                        }))
+                        .await;
                 }
                 Err(err) => {
-                    let _ = tx.send(Ok(CompileResponse {
-                        result: Some(ProtoResult::ErrorMessage(err.error.message)),
-                    })).await;
+                    let _ = tx
+                        .send(Ok(CompileResponse {
+                            result: Some(ProtoResult::ErrorMessage(err.error.message)),
+                        }))
+                        .await;
                 }
             }
         });

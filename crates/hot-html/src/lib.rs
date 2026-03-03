@@ -1,8 +1,8 @@
-use hot_core::ir::{HotNode, HotStyle, Align, Decoration};
-use hot_core::traits::Parser as HotParser;
-use scraper::{Html, Node};
 use ego_tree::NodeRef;
+use hot_core::ir::{Align, Decoration, HotNode, HotStyle};
+use hot_core::traits::Parser as HotParser;
 use regex::Regex;
+use scraper::{Html, Node};
 
 pub struct HtmlParser;
 
@@ -10,12 +10,12 @@ impl HotParser for HtmlParser {
     fn parse(&self, input: &str) -> Vec<HotNode> {
         let fragment = Html::parse_fragment(input);
         let mut nodes = Vec::new();
-        
+
         let root = fragment.tree.root();
-        
+
         // Scraper might wrap results in html/body. We want to skip them if they are implicit.
         let mut current_nodes = root.children().collect::<Vec<_>>();
-        
+
         // If there's only one child and it's <html>, dive in.
         if current_nodes.len() == 1 {
             if let Some(e) = current_nodes[0].value().as_element() {
@@ -24,7 +24,7 @@ impl HotParser for HtmlParser {
                 }
             }
         }
-        
+
         // Again for body if we were in html
         if current_nodes.len() == 1 {
             if let Some(e) = current_nodes[0].value().as_element() {
@@ -38,7 +38,9 @@ impl HotParser for HtmlParser {
             if let Some(hot_node) = self.parse_node(node) {
                 // Ignore top-level empty text nodes
                 if let HotNode::Text(t) = &hot_node {
-                    if t.trim().is_empty() { continue; }
+                    if t.trim().is_empty() {
+                        continue;
+                    }
                 }
                 nodes.push(hot_node);
             }
@@ -53,7 +55,8 @@ impl HtmlParser {
             Node::Text(t) => Some(HotNode::Text(t.to_string())),
             Node::Element(e) => {
                 let name = e.name().to_lowercase();
-                let children = node.children()
+                let children = node
+                    .children()
                     .filter_map(|c| self.parse_node(c))
                     .collect::<Vec<_>>();
 
@@ -64,8 +67,14 @@ impl HtmlParser {
                         let level = name[1..].parse().unwrap_or(1);
                         Some(HotNode::Heading { level, children })
                     }
-                    "ul" => Some(HotNode::List { ordered: false, items: self.parse_list_items(node) }),
-                    "ol" => Some(HotNode::List { ordered: true, items: self.parse_list_items(node) }),
+                    "ul" => Some(HotNode::List {
+                        ordered: false,
+                        items: self.parse_list_items(node),
+                    }),
+                    "ol" => Some(HotNode::List {
+                        ordered: true,
+                        items: self.parse_list_items(node),
+                    }),
                     "img" => {
                         let path = e.attr("src").unwrap_or("").to_string();
                         let alt = e.attr("alt").map(|s| s.to_string());
@@ -74,7 +83,7 @@ impl HtmlParser {
                     "br" => Some(HotNode::Raw("\\\\".to_string())),
                     "span" | "p" | "div" => {
                         // Special case: hot-protect (used for tokens/protected content)
-                        if e.attr("class").map_or(false, |c| c.contains("hot-protect")) {
+                        if e.attr("class").is_some_and(|c| c.contains("hot-protect")) {
                             if let Some(raw) = e.attr("data-raw") {
                                 return Some(HotNode::Raw(raw.to_string()));
                             }
@@ -89,10 +98,16 @@ impl HtmlParser {
                         if let Some(s) = style {
                             Some(HotNode::Styled { style: s, children })
                         } else {
-                            Some(HotNode::Styled { style: HotStyle::default(), children })
+                            Some(HotNode::Styled {
+                                style: HotStyle::default(),
+                                children,
+                            })
                         }
                     }
-                    _ => Some(HotNode::Styled { style: HotStyle::default(), children }),
+                    _ => Some(HotNode::Styled {
+                        style: HotStyle::default(),
+                        children,
+                    }),
                 }
             }
             _ => None,
@@ -100,7 +115,9 @@ impl HtmlParser {
     }
 
     fn is_effectively_empty(&self, nodes: &[HotNode]) -> bool {
-        if nodes.is_empty() { return true; }
+        if nodes.is_empty() {
+            return true;
+        }
         nodes.iter().all(|n| match n {
             HotNode::Text(t) => t.trim().is_empty() || t == "\u{a0}",
             HotNode::Raw(r) => r == "\\\\", // Treat standalone <br> as empty for p-wrapping
@@ -118,28 +135,27 @@ impl HtmlParser {
                     false
                 }
             })
-            .map(|li| {
-                li.children()
-                    .filter_map(|c| self.parse_node(c))
-                    .collect()
-            })
+            .map(|li| li.children().filter_map(|c| self.parse_node(c)).collect())
             .collect()
     }
 
     fn parse_style(&self, style_str: &str) -> Option<HotStyle> {
-        if style_str.is_empty() { return None; }
-        
-    fn parse_style(&self, style_str: &str) -> Option<HotStyle> {
-        if style_str.is_empty() { return None; }
-        
+        if style_str.is_empty() {
+            return None;
+        }
+
         let mut style = HotStyle::default();
         let mut found = false;
 
         use once_cell::sync::Lazy;
-        static RE_FAMILY: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)font-family:\s*([^;]+)").unwrap());
-        static RE_SIZE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap());
-        static RE_ALIGN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)text-align:\s*(left|center|right|justify)").unwrap());
-        static RE_DECO: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)text-decoration:\s*(underline|line-through)").unwrap());
+        static RE_FAMILY: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"(?i)font-family:\s*([^;]+)").unwrap());
+        static RE_SIZE: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"(?i)font-size:\s*(\d+(?:\.\d+)?)(pt|px)?").unwrap());
+        static RE_ALIGN: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"(?i)text-align:\s*(left|center|right|justify)").unwrap());
+        static RE_DECO: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"(?i)text-decoration:\s*(underline|line-through)").unwrap());
 
         if let Some(caps) = RE_FAMILY.captures(style_str) {
             style.font_family = Some(caps[1].trim().to_string());
@@ -167,7 +183,11 @@ impl HtmlParser {
             found = true;
         }
 
-        if found { Some(style) } else { None }
+        if found {
+            Some(style)
+        } else {
+            None
+        }
     }
 }
 #[cfg(test)]
@@ -180,9 +200,12 @@ mod tests {
         let html = "<h1>Title</h1><p>Text with <strong>bold</strong> and <em>italic</em>.</p>";
         let nodes = parser.parse(html);
         println!("Nodes: {:?}", nodes);
-        
+
         // scraper might wrap fragments or have empty text nodes
-        let filtered_nodes: Vec<_> = nodes.into_iter().filter(|n| !matches!(n, HotNode::Text(t) if t.trim().is_empty())).collect();
+        let filtered_nodes: Vec<_> = nodes
+            .into_iter()
+            .filter(|n| !matches!(n, HotNode::Text(t) if t.trim().is_empty()))
+            .collect();
         assert!(filtered_nodes.len() >= 2);
     }
 
@@ -191,7 +214,7 @@ mod tests {
         let parser = HtmlParser;
         let html = r#"<span style="font-family: Arial; font-size: 14pt; text-align: center;">Centered Text</span>"#;
         let nodes = parser.parse(html);
-        
+
         assert_eq!(nodes.len(), 1);
         if let HotNode::Styled { style, .. } = &nodes[0] {
             assert_eq!(style.font_family.as_deref(), Some("Arial"));
@@ -207,10 +230,10 @@ mod tests {
         let parser = HtmlParser;
         let html = "<ul><li>Item 1</li><li>Item 2</li></ul>";
         let nodes = parser.parse(html);
-        
+
         assert_eq!(nodes.len(), 1);
         if let HotNode::List { ordered, items } = &nodes[0] {
-            assert_eq!(*ordered, false);
+            assert!(!*ordered);
             assert_eq!(items.len(), 2);
         } else {
             panic!("Expected List node");

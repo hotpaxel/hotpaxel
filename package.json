@@ -9,11 +9,13 @@
   "scripts": {
     "build": "bunx turbo build",
     "lint": "bunx turbo lint",
-    "test": "bunx turbo test",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "cargo clean && bunx turbo run clean && rm -rf .turbo",
     "purge": "bun run clean && find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "vitest": "^3.0.0"
   }
 }

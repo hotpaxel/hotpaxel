@@ -1,6 +1,6 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use wasm_bindgen::prelude::*;
-use lazy_static::lazy_static;
 
 pub use hot_core::ir;
 pub use hot_core::traits;
@@ -9,7 +9,8 @@ pub use hot_core::traits;
 pub mod client;
 
 lazy_static! {
-    static ref LOGIC_REGEX: Regex = Regex::new(r"%%\s*(\{\{[\s\S]*?\}\}|\{%\s*[\s\S]*?%\})").unwrap();
+    static ref LOGIC_REGEX: Regex =
+        Regex::new(r"%%\s*(\{\{[\s\S]*?\}\}|\{%\s*[\s\S]*?%\})").unwrap();
 }
 
 #[wasm_bindgen]
@@ -45,10 +46,10 @@ impl HotConverter {
     pub fn extract_hot_tex(&self, html: &str) -> String {
         // Use new plugin-based architecture for conversion
         use hot_core::traits::{Parser as _, Renderer as _};
-        
+
         let parser = hot_html::HtmlParser;
         let renderer = hot_tex::TexRenderer;
-        
+
         // If the HTML is wrapped in the editor's <pre> tag, we might want to strip it or just parse the whole thing.
         // The HtmlParser handles fragments correctly.
         let nodes = parser.parse(html);
@@ -81,8 +82,12 @@ mod tests {
     #[test]
     fn test_basic_bold_italic() {
         let hot = HotConverter::new().unwrap();
-        let html = r#"<pre data-hot-tex="true">Hello <strong>Bold</strong> and <em>Italic</em></pre>"#;
-        assert_eq!(hot.extract_hot_tex(html), r#"Hello \textbf{Bold} and \textit{Italic}"#);
+        let html =
+            r#"<pre data-hot-tex="true">Hello <strong>Bold</strong> and <em>Italic</em></pre>"#;
+        assert_eq!(
+            hot.extract_hot_tex(html),
+            r#"Hello \textbf{Bold} and \textit{Italic}"#
+        );
     }
 
     #[test]
@@ -122,7 +127,7 @@ mod tests {
         let html1 = r#"<pre data-hot-tex="true"><p>L1</p><p></p><p>L2</p></pre>"#;
         let html2 = r#"<pre data-hot-tex="true"><p>L1</p><p><br></p><p>L2</p></pre>"#;
         let html3 = r#"<pre data-hot-tex="true"><p>L1</p><p>&nbsp;</p><p>L2</p></pre>"#;
-        
+
         assert!(hot.extract_hot_tex(html1).contains(r"\par\vspace{1em}\par"));
         assert!(hot.extract_hot_tex(html2).contains(r"\par\vspace{1em}\par"));
         assert!(hot.extract_hot_tex(html3).contains(r"\par\vspace{1em}\par"));
@@ -131,7 +136,8 @@ mod tests {
     #[test]
     fn test_inline_font_family() {
         let hot = HotConverter::new().unwrap();
-        let html = r#"<pre data-hot-tex="true"><span style="font-family: NanumGothic">Hello</span></pre>"#;
+        let html =
+            r#"<pre data-hot-tex="true"><span style="font-family: NanumGothic">Hello</span></pre>"#;
         let result = hot.extract_hot_tex(html);
         assert!(result.contains(r"\fontspec{NanumGothic}"));
     }
@@ -139,7 +145,8 @@ mod tests {
     #[test]
     fn test_inline_font_size() {
         let hot = HotConverter::new().unwrap();
-        let html = r#"<pre data-hot-tex="true"><span style="font-size: 24pt">Big text</span></pre>"#;
+        let html =
+            r#"<pre data-hot-tex="true"><span style="font-size: 24pt">Big text</span></pre>"#;
         let result = hot.extract_hot_tex(html);
         assert!(result.contains(r"\fontsize{24pt}"));
     }

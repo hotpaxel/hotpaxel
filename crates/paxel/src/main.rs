@@ -11,11 +11,11 @@ use axum::{
     Json, Router,
 };
 use clap::Parser;
+use http_body_util::BodyExt;
 use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
-use http_body_util::BodyExt;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -45,37 +45,41 @@ async fn main() {
         .route("/fonts/download/:file_name", get(fonts::download_font))
         // Health & Version
         .route("/health", get(|| async { "ok" }))
-        .route("/version", get(|| async {
-            Json(json!({
-                "version": env!("CARGO_PKG_VERSION"),
-                "name": env!("CARGO_PKG_NAME")
-            }))
-        }));
+        .route(
+            "/version",
+            get(|| async {
+                Json(json!({
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "name": env!("CARGO_PKG_NAME")
+                }))
+            }),
+        );
 
     // UI Serving
     if !args.disable_ui {
         let static_path = PathBuf::from(&args.static_dir);
         if static_path.exists() {
             tracing::info!("Serving static files from: {:?}", static_path);
-            
+
             // SPA Fallback: serve index.html for any unknown route
             let index_path = static_path.join("index.html");
             let serve_dir = ServeDir::new(&static_path)
                 .fallback(tower_http::services::ServeFile::new(index_path));
-            
+
             app = app.fallback_service(serve_dir);
         } else {
-            tracing::warn!("Static directory {:?} not found, UI serving disabled.", static_path);
+            tracing::warn!(
+                "Static directory {:?} not found, UI serving disabled.",
+                static_path
+            );
         }
     }
 
     // gRPC Services
     let grpc_compiler = CompilerServiceServer::new(grpc_compiler::MyCompiler {});
-    let grpc_font = FontServiceServer::new(
-        grpc_font::MyFontService {
-            static_dir: args.static_dir.clone(),
-        }
-    );
+    let grpc_font = FontServiceServer::new(grpc_font::MyFontService {
+        static_dir: args.static_dir.clone(),
+    });
     let grpc_system = SystemServiceServer::new(grpc_system::MySystemService {});
 
     // For gRPC-Web support with Axum 0.7, we need to bridge the body types.
@@ -100,7 +104,7 @@ async fn main() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
     tracing::info!("HOTPAXEL server listening on {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }

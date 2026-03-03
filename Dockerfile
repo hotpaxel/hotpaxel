@@ -1,7 +1,7 @@
 # --- Stage 1: Build Rust Backend & WASM ---
 FROM rust:1.88-slim-bookworm AS rust-builder
 
-RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev protobuf-compiler && rm -rf /var/lib/apt/lists/*
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 WORKDIR /app
@@ -18,14 +18,11 @@ RUN wasm-pack build --target web --release --scope hotpaxel
 # --- Stage 2: Build Frontend ---
 FROM oven/bun:1-debian AS fe-builder
 WORKDIR /app
-COPY package.json turbo.json bun.lock ./
-COPY crates ./crates
-COPY apps/hot-editor/package.json ./apps/hot-editor/
+COPY . .
 # Copy the built WASM package from stage 1
 COPY --from=rust-builder /app/crates/hot/pkg /app/crates/hot/pkg
 
 RUN bun install
-COPY apps/hot-editor ./apps/hot-editor
 WORKDIR /app/apps/hot-editor
 RUN bun run build
 

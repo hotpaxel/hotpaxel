@@ -1,11 +1,15 @@
-use hot_core::ir::{HotNode, Align, Decoration};
+use hot_core::ir::{Align, Decoration, HotNode};
 use hot_core::traits::Renderer;
 
 pub struct TexRenderer;
 
 impl Renderer for TexRenderer {
     fn render(&self, nodes: &[HotNode]) -> String {
-        nodes.iter().map(|n| self.render_node(n)).collect::<Vec<_>>().join("")
+        nodes
+            .iter()
+            .map(|n| self.render_node(n))
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -39,13 +43,16 @@ impl TexRenderer {
             }
             HotNode::Styled { style, children } => {
                 let mut out = self.render(children);
-                
+
                 if let Some(family) = &style.font_family {
                     out = format!("{{\\fontspec{{{}}} {}}}", family, out);
                 }
                 if let Some(size) = style.font_size {
                     let baseline = size * 1.2;
-                    out = format!("{{\\fontsize{{{}pt}}{{{:.1}pt}}\\selectfont {}}}", size, baseline, out);
+                    out = format!(
+                        "{{\\fontsize{{{}pt}}{{{:.1}pt}}\\selectfont {}}}",
+                        size, baseline, out
+                    );
                 }
                 if let Some(align) = style.text_align {
                     let env = match align {
@@ -88,13 +95,16 @@ impl TexRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hot_core::ir::{HotStyle, Align};
+    use hot_core::ir::{Align, HotStyle};
 
     #[test]
     fn test_render_simple() {
         let renderer = TexRenderer;
         let nodes = vec![
-            HotNode::Heading { level: 1, children: vec![HotNode::Text("Title".to_string())] },
+            HotNode::Heading {
+                level: 1,
+                children: vec![HotNode::Text("Title".to_string())],
+            },
             HotNode::Text("Hello ".to_string()),
             HotNode::Bold(vec![HotNode::Text("World".to_string())]),
         ];

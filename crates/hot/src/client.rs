@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
-use std::collections::HashSet;
-use regex::Regex;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub struct PaxelClient {
@@ -44,11 +44,22 @@ impl PaxelClient {
         }
     }
 
-    pub fn compile(&self, mut tex: String, passes: Option<u8>) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let assets = self.extract_assets(&mut tex)?;
-        let request = CompileRequest { tex, assets, passes };
+    pub fn compile(
+        &self,
+        mut tex: String,
+        passes: Option<u8>,
+        base_dir: Option<&Path>,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let assets = self.extract_assets(&mut tex, base_dir)?;
+        let request = CompileRequest {
+            tex,
+            assets,
+            passes,
+        };
 
-        let resp = self.client.post(format!("{}/compile", self.host))
+        let resp = self
+            .client
+            .post(format!("{}/compile", self.host))
             .json(&request)
             .send()?;
 
@@ -69,7 +80,10 @@ impl PaxelClient {
     }
 
     pub fn download_font(&self, name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let resp = self.client.get(format!("{}/fonts/download/{}", self.host, name)).send()?;
+        let resp = self
+            .client
+            .get(format!("{}/fonts/download/{}", self.host, name))
+            .send()?;
         if resp.status().is_success() {
             Ok(resp.bytes()?.to_vec())
         } else {
@@ -77,7 +91,11 @@ impl PaxelClient {
         }
     }
 
-    fn extract_assets(&self, tex: &mut String) -> Result<Vec<Asset>, Box<dyn std::error::Error>> {
+    fn extract_assets(
+        &self,
+        tex: &mut String,
+        base_dir: Option<&Path>,
+    ) -> Result<Vec<Asset>, Box<dyn std::error::Error>> {
         let re = Regex::new(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")?;
         let mut remote_mappings = Vec::new();
         let mut assets = Vec::new();
@@ -90,14 +108,13 @@ impl PaxelClient {
             }
 
             if original_name.starts_with("http://") || original_name.starts_with("https://") {
-                // Remote asset: download and give it a safe name
+                // Remote asset processing... (이전과 동일)
                 match self.client.get(&original_name).send() {
                     Ok(resp) if resp.status().is_success() => {
                         let bytes = resp.bytes()?.to_vec();
-                        // Use a hash or simple unique name to avoid path issues
-                        let ext = original_name.split('.').last().unwrap_or("bin");
+                        let ext = original_name.split('.').next_back().unwrap_or("bin");
                         let safe_name = format!("remote_{}.{}", processed_names.len(), ext);
-                        
+
                         assets.push(Asset {
                             name: safe_name.clone(),
                             content: BASE64.encode(bytes),
@@ -105,12 +122,20 @@ impl PaxelClient {
                         remote_mappings.push((original_name.clone(), safe_name));
                     }
                     _ => {
-                        eprintln!("Warning: Failed to download remote asset: {}", original_name);
+                        eprintln!(
+                            "Warning: Failed to download remote asset: {}",
+                            original_name
+                        );
                     }
                 }
             } else {
                 // Local asset
-                let path = Path::new(&original_name);
+                let path = if let Some(base) = base_dir {
+                    base.join(&original_name)
+                } else {
+                    PathBuf::from(&original_name)
+                };
+
                 if path.exists() {
                     let bytes = fs::read(path)?;
                     assets.push(Asset {

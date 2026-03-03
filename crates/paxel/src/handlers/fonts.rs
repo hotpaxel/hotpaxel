@@ -49,7 +49,10 @@ fn init_fonts() -> &'static FontCache {
                 let lower_path = file_path.to_lowercase();
 
                 // Filter out non-TTF/OTF/TTC fonts (e.g., PFB, Type1) to prevent clutter and rendering issues
-                if !(lower_path.ends_with(".ttf") || lower_path.ends_with(".otf") || lower_path.ends_with(".ttc")) {
+                if !(lower_path.ends_with(".ttf")
+                    || lower_path.ends_with(".otf")
+                    || lower_path.ends_with(".ttc"))
+                {
                     continue;
                 }
 
@@ -70,9 +73,10 @@ fn init_fonts() -> &'static FontCache {
                     .to_string();
 
                 // Filter out math/system fallback fonts which are not suited for standard WYSIWYG
-                if family.to_lowercase().contains("math") 
-                    || family.starts_with('.') 
-                    || family.to_lowercase().contains("dingbats") {
+                if family.to_lowercase().contains("math")
+                    || family.starts_with('.')
+                    || family.to_lowercase().contains("dingbats")
+                {
                     continue;
                 }
 
@@ -122,7 +126,7 @@ pub async fn download_font(Path(file_name): Path<String>) -> impl IntoResponse {
                 .extension()
                 .and_then(|e| e.to_str())
                 .unwrap_or("");
-                
+
             let content_type = match ext.to_lowercase().as_str() {
                 "ttf" => "font/ttf",
                 "otf" => "font/otf",
