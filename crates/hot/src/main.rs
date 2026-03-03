@@ -5,6 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
 
+use hot::config::Config;
+
 #[derive(Parser)]
 #[command(name = "hot")]
 #[command(version, about = "HOTPAXEL Client CLI", long_about = None)]
@@ -12,13 +14,24 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    /// PAXEL server host
-    #[arg(long, env = "PAXEL_HOST", default_value = "http://localhost:8888")]
-    host: String,
+    /// PAXEL server host (CLI > Env > Config > Default)
+    #[arg(long, env = "PAXEL_HOST")]
+    host: Option<String>,
+}
+
+#[derive(Subcommand)]
+enum ConfigAction {
+    /// Set a default host
+    DefaultHost { url: String },
 }
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Configure settings
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
     /// Compile TeX to PDF (requires PAXEL server)
     Compile {
         /// Input .tex (or .html) file
@@ -58,9 +71,21 @@ use hot_core::traits::{Parser as _, Renderer as _};
 
 fn main() {
     let cli = Cli::parse();
-    let client = PaxelClient::new(cli.host);
+    let mut config = Config::new();
+    let host = cli
+        .host
+        .or(config.default_host.clone())
+        .unwrap_or_else(|| "http://localhost:8888".to_string());
+    let client = PaxelClient::new(host);
 
     match cli.command {
+        Commands::Config { action } => match action {
+            ConfigAction::DefaultHost { url } => {
+                config.default_host = Some(url.clone());
+                config.save().expect("Failed to save config");
+                println!("✔  Default host set to: {}", url);
+            }
+        },
         Commands::Compile {
             input,
             output,

@@ -7,6 +7,8 @@ pub use hot_core::traits;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod client;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod config;
 
 lazy_static! {
     static ref LOGIC_REGEX: Regex =
