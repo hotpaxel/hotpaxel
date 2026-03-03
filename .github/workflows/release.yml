@@ -15,8 +15,8 @@ env:
   VERSION: ${{ github.ref_name }} # e.g. v0.2.0-alpha.3
 
 jobs:
-  build-frontend:
-    name: Build Frontend
+  build-wasm:
+    name: Build WASM SDK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -49,6 +49,20 @@ jobs:
         with:
           name: hot
           path: crates/hot/pkg/
+
+  build-editor:
+    name: Build Editor UI
+    needs: build-wasm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download @hotpaxel/hot package
+        uses: actions/download-artifact@v6
+        with:
+          name: hot
+          path: crates/hot/pkg
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -117,7 +131,7 @@ jobs:
 
   npm-publish:
     name: NPM Publish
-    needs: build-frontend
+    needs: build-wasm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -200,7 +214,7 @@ jobs:
 
   github-release:
     name: Create GitHub Release
-    needs: [build-frontend, build-backend, npm-publish, docker-publish]
+    needs: [build-wasm, build-editor, build-backend, npm-publish, docker-publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
