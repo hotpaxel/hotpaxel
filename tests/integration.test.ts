@@ -18,18 +18,36 @@ describe('HotPaxel Integration Tests', () => {
 
         it('should return version information', async () => {
             const res = await fetch(`${SERVER_URL}/version`);
-            const data = await res.json();
+            const data: any = await res.json();
             expect(data).toHaveProperty('name', 'paxel');
             expect(data).toHaveProperty('version');
         });
 
         it('should list available fonts', async () => {
             const res = await fetch(`${SERVER_URL}/fonts`);
-            const data = await res.json();
+            const data: any = await res.json();
             expect(Array.isArray(data)).toBe(true);
             if (data.length > 0) {
                 expect(data[0]).toHaveProperty('family');
             }
+        });
+
+        it('should return compile and total times on /compile', async () => {
+            const res = await fetch(`${SERVER_URL}/compile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tex: '\\documentclass{article}\\begin{document}Performance test\\end{document}',
+                    passes: 1
+                })
+            });
+            const data: any = await res.json();
+            expect(data).toHaveProperty('pdf');
+            expect(data).toHaveProperty('compileTimeMs');
+            expect(data).toHaveProperty('totalTimeMs');
+            expect(typeof data.compileTimeMs).toBe('number');
+            expect(typeof data.totalTimeMs).toBe('number');
+            expect(data.totalTimeMs).toBeGreaterThanOrEqual(data.compileTimeMs);
         });
     });
 
@@ -46,10 +64,13 @@ describe('HotPaxel Integration Tests', () => {
                 ? `${hotBin} --host ${SERVER_URL} compile ${texPath} ${pdfPath}`
                 : `cargo run --package hot -- --host ${SERVER_URL} compile ${texPath} ${pdfPath}`;
 
-            execSync(cmd, { stdio: 'inherit' });
+            const output = execSync(cmd).toString();
 
             expect(fs.existsSync(pdfPath)).toBe(true);
             expect(fs.statSync(pdfPath).size).toBeGreaterThan(0);
+            expect(output).toContain('compile:');
+            expect(output).toContain('total:');
+            expect(output).toContain('ms');
         });
 
         it('should compile korean_test.tex fixture', () => {
@@ -59,10 +80,13 @@ describe('HotPaxel Integration Tests', () => {
             if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
 
             const cmd = `cargo run --package hot -- --host ${SERVER_URL} compile ${texPath} ${pdfPath}`;
-            execSync(cmd, { stdio: 'inherit' });
+            const output = execSync(cmd).toString();
 
             expect(fs.existsSync(pdfPath)).toBe(true);
             expect(fs.statSync(pdfPath).size).toBeGreaterThan(0);
+            expect(output).toContain('compile:');
+            expect(output).toContain('total:');
+            expect(output).toContain('ms');
         });
 
         it('should compile test_font.tex fixture (NanumGothic)', () => {
@@ -72,10 +96,13 @@ describe('HotPaxel Integration Tests', () => {
             if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
 
             const cmd = `cargo run --package hot -- --host ${SERVER_URL} compile ${texPath} ${pdfPath}`;
-            execSync(cmd, { stdio: 'inherit' });
+            const output = execSync(cmd).toString();
 
             expect(fs.existsSync(pdfPath)).toBe(true);
             expect(fs.statSync(pdfPath).size).toBeGreaterThan(0);
+            expect(output).toContain('compile:');
+            expect(output).toContain('total:');
+            expect(output).toContain('ms');
         });
     });
 });

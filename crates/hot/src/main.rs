@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use clap::{Parser, Subcommand};
 use hot::client::PaxelClient;
 use std::fs;
@@ -85,10 +86,16 @@ fn main() {
 
             println!("ℹ  Compiling {}...", input.display());
             match client.compile(tex, Some(passes), input.parent()) {
-                Ok(pdf_bytes) => {
+                Ok(response) => {
                     let out_path = output.unwrap_or_else(|| input.with_extension("pdf"));
+                    let pdf_bytes = BASE64.decode(response.pdf).expect("Failed to decode PDF");
                     fs::write(&out_path, pdf_bytes).expect("Failed to write PDF");
-                    println!("✔  Successfully compiled → {}", out_path.display());
+                    println!(
+                        "✔  Successfully compiled → {} (compile: {}ms, total: {}ms)",
+                        out_path.display(),
+                        response.compile_time_ms,
+                        response.total_time_ms
+                    );
                 }
                 Err(e) => {
                     eprintln!("✗  Compilation failed: {}", e);

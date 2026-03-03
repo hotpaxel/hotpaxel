@@ -8,14 +8,20 @@ use tokio::fs;
 use tokio::process::Command;
 use uuid::Uuid;
 
+use std::time::Instant;
+
 pub async fn compile_tex(Json(payload): Json<CompileRequest>) -> impl IntoResponse {
+    let start_total = Instant::now();
     match execute_compilation(payload).await {
-        Ok(pdf_bytes) => (
-            StatusCode::OK,
-            [("Content-Type", "application/pdf")],
-            pdf_bytes,
-        )
-            .into_response(),
+        Ok(res) => {
+            let total_time_ms = start_total.elapsed().as_millis() as u64;
+            let response = crate::models::CompileResponse {
+                pdf: BASE64.encode(res.pdf),
+                compile_time_ms: res.compile_time_ms,
+                total_time_ms,
+            };
+            (StatusCode::OK, Json(response)).into_response()
+        }
         Err(err) => (err.status, Json(err.error)).into_response(),
     }
 }
@@ -25,7 +31,12 @@ pub struct CompilationError {
     pub error: ErrorResponse,
 }
 
-pub async fn execute_compilation(payload: CompileRequest) -> Result<Vec<u8>, CompilationError> {
+pub struct InternalCompileResult {
+    pub pdf: Vec<u8>,
+    pub compile_time_ms: u64,
+}
+
+pub async fn execute_compilation(payload: CompileRequest) -> Result<InternalCompileResult, CompilationError> {
     let _id = Uuid::new_v4().to_string();
     let dir = match tempdir() {
         Ok(d) => d,
@@ -97,6 +108,7 @@ pub async fn execute_compilation(payload: CompileRequest) -> Result<Vec<u8>, Com
     // Run xelatex asynchronously
     let passes = payload.passes.unwrap_or(2);
     let mut last_output = None;
+    let start_compile = Instant::now();
 
     for _ in 0..passes {
         let output = match Command::new("xelatex")
@@ -128,6 +140,8 @@ pub async fn execute_compilation(payload: CompileRequest) -> Result<Vec<u8>, Com
         }
     }
 
+    let compile_time_ms = start_compile.elapsed().as_millis() as u64;
+
     let output = last_output.ok_or_else(|| CompilationError {
         status: StatusCode::INTERNAL_SERVER_ERROR,
         error: ErrorResponse {
@@ -151,7 +165,10 @@ pub async fn execute_compilation(payload: CompileRequest) -> Result<Vec<u8>, Com
     }
 
     match fs::read(dir.path().join("document.pdf")).await {
-        Ok(b) => Ok(b),
+        Ok(b) => Ok(InternalCompileResult {
+            pdf: b,
+            compile_time_ms,
+        }),
         Err(e) => Err(CompilationError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             error: ErrorResponse {

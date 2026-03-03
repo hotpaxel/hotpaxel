@@ -6,6 +6,15 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[cfg(not(target_arch = "wasm32"))]
+#[derive(Deserialize)]
+pub struct CompileResponse {
+    pub pdf: String,
+    #[serde(rename = "compileTimeMs")]
+    pub compile_time_ms: u64,
+    #[serde(rename = "totalTimeMs")]
+    pub total_time_ms: u64,
+}
+
 pub struct PaxelClient {
     host: String,
     client: reqwest::blocking::Client,
@@ -49,7 +58,7 @@ impl PaxelClient {
         mut tex: String,
         passes: Option<u8>,
         base_dir: Option<&Path>,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<CompileResponse, Box<dyn std::error::Error>> {
         let assets = self.extract_assets(&mut tex, base_dir)?;
         let request = CompileRequest {
             tex,
@@ -64,7 +73,8 @@ impl PaxelClient {
             .send()?;
 
         if resp.status().is_success() {
-            Ok(resp.bytes()?.to_vec())
+            let res: CompileResponse = resp.json()?;
+            Ok(res)
         } else {
             let err_json: serde_json::Value = resp.json()?;
             let msg = err_json["message"].as_str().unwrap_or("Unknown error");

@@ -25,6 +25,15 @@ pub struct ErrorResponse {
     pub output: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct CompileResponse {
+    pub pdf: String, // Base64 encoded
+    #[serde(rename = "compileTimeMs")]
+    pub compile_time_ms: u64,
+    #[serde(rename = "totalTimeMs")]
+    pub total_time_ms: u64,
+}
+
 #[derive(Serialize, Clone)]
 pub struct FontInfo {
     pub family: String,

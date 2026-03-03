@@ -36,10 +36,10 @@ impl CompilerService for MyCompiler {
             };
 
             match execute_compilation(rest_req).await {
-                Ok(pdf_bytes) => {
+                Ok(res) => {
                     let _ = tx
                         .send(Ok(CompileResponse {
-                            result: Some(ProtoResult::PdfChunk(pdf_bytes)),
+                            result: Some(ProtoResult::PdfChunk(res.pdf)),
                         }))
                         .await;
                 }
