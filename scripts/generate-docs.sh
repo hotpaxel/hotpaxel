@@ -16,13 +16,19 @@ fi
 
 echo "🎨 Copying specification and creating Scalar HTML at apps/docs/..."
 
+# Extract version from root Cargo.toml [workspace.package] section
+VERSION=$(grep -m 1 "^version =" Cargo.toml | cut -d '"' -f 2)
+if [ -z "$VERSION" ]; then
+    VERSION="0.0.0-unknown"
+fi
+
 # Copy the JSON file and inject metadata using jq
 # This avoids breaking Rust build system with proto annotations
-jq '.info.title = "HOT Paxel API" | 
+jq --arg ver "$VERSION" '.info.title = "HOTPaxel API" | 
     .info.description = "High-performance TeX-to-PDF compilation and font management service." | 
-    .info.version = "0.2.1-alpha.1" |
-    .info.contact = {"name": "HOT Paxel Team", "url": "https://github.com/hotpaxel/hotpaxel"} |
-    .info.license = {"name": "Apache License 2.0", "url": "https://github.com/hotpaxel/hotpaxel/blob/main/LICENSE"}' \
+    .info.version = $ver |
+    .info.contact = {"url": "https://github.com/hotpaxel/hotpaxel"} |
+    .info.license = {"name": "MIT License", "url": "https://github.com/hotpaxel/hotpaxel/blob/main/LICENSE"}' \
     gen/openapi/openapi.swagger.json > apps/docs/openapi.json
 
 # Create the HTML file using Scalar Web Component (referencing the JSON file)
@@ -30,7 +36,7 @@ cat <<EOF > apps/docs/index.html
 <!doctype html>
 <html lang="ko">
   <head>
-    <title>HOTPAXEL API Reference</title>
+    <title>HOTPaxel API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>

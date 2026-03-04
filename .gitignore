@@ -16,3 +16,6 @@ gen/
 logs
 *.log
 *-debug.log*
+
+# Generated Documentation
+apps/docs/
