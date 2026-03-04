@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#f4f4f4"/>
+  <text x="50" y="35" fill="#d90429" font-family="sans-serif" font-weight="900" font-size="32" text-anchor="middle" dominant-baseline="middle">HOT</text>
+  <text x="50" y="75" fill="#1a1a1a" font-family="serif" font-weight="700" font-size="38" text-anchor="middle" dominant-baseline="middle">Paxel</text>
+</svg>
