@@ -162,7 +162,7 @@ async fn main() {
         .nest_service("/hotpaxel.v1.SystemService", bridge_grpc!(grpc_system));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
-    tracing::info!("HOTPAXEL server listening on {}", addr);
+    tracing::info!("HOTPaxel server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

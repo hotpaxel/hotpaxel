@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# HOTPAXEL Unified Image Builder
+# HOTPaxel Unified Image Builder
 # Usage: ./build.sh [tag] [user]
 
 TAG=${1:-latest}

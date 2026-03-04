@@ -1,6 +1,6 @@
-# HotPaxel Editor
+# HOTPaxel Editor
 
-HotPaxel Editor is a modern React Single Page Application (SPA) powered by Vite. It serves as the primary frontend for the HotPaxel project, providing a rich, interactive WYSIWYG editor for LaTeX using TipTap.
+HOTPaxel Editor is a modern React Single Page Application (SPA) powered by Vite. It serves as the primary frontend for the HOTPaxel project, providing a rich, interactive WYSIWYG editor for LaTeX using TipTap.
 
 ## Features
 - **Rich Text Editing**: Powered by TipTap, allowing users to write and format text visually.

@@ -9,7 +9,7 @@ use hot::config::Config;
 
 #[derive(Parser)]
 #[command(name = "hot")]
-#[command(version, about = "HOTPAXEL Client CLI", long_about = None)]
+#[command(version, about = "HOTPaxel Client CLI", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

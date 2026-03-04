@@ -1,4 +1,4 @@
-# HOTPAXEL Architecture Refactoring Plan
+# HOTPaxel Architecture Refactoring Plan
 
 Renegotiating the monorepo structure to align with the original project intent (hot=client, paxel=server).
 

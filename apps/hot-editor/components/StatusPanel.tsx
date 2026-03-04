@@ -14,7 +14,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error }) => 
       <div className="flex items-center gap-3">
         <span className="font-bold flex items-center">
            <span className="text-[#ff4d4d] font-sans tracking-tight">HOT</span>
-           <span className="text-[#0f172a] font-serif ml-0.5">PAXEL</span>
+           <span className="text-[#0f172a] font-serif ml-0.5">Paxel</span>
         </span>
         
         <div className="h-4 w-px bg-slate-300 mx-2"></div>

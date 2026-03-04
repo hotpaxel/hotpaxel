@@ -1,6 +1,6 @@
-# HOTPAXEL
+# HOTPaxel
 
-HOTPAXEL is a high-performance document generation suite where **the source of truth is TeX** while the editing experience remains fluid and modern.
+HOTPaxel is a high-performance document generation suite where **the source of truth is TeX** while the editing experience remains fluid and modern.
 
 ## Core Modules
 

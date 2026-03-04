@@ -1,7 +1,7 @@
-> Spec of Record: This document is the single source of truth for HOTPAXEL architecture.  
+> Spec of Record: This document is the single source of truth for HOTPaxel architecture.  
 > Changes require PR + CTO approval.
 
-# HOTPAXEL System Design Specification
+# HOTPaxel System Design Specification
 Version: 1.3.0 (Unified Binary)
 Date: 2026-03-03
 Status: Fully Implemented (v0.2.1)

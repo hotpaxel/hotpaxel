@@ -1,4 +1,4 @@
-# 📘 HOTPAXEL Engineering Architecture Guide
+# 📘 HOTPaxel Engineering Architecture Guide
 
 **(Team Understanding Document)**
 
@@ -6,9 +6,9 @@
 
 ---
 
-## 1. Why HOTPAXEL?
+## 1. Why HOTPaxel?
 
-HOTPAXEL is not just a "document editor".
+HOTPaxel is not just a "document editor".
 It must satisfy **contradictory requirements**:
 
 1. **Legal/Contract documents must be strict like TeX**
@@ -16,7 +16,8 @@ It must satisfy **contradictory requirements**:
 3. **Data loss is unacceptable** (server failure/network issues)
 4. PDF generation is a heavy and risky operation (security/resource)
 
-👉 To resolve this, HOTPAXEL **physically separates editing and rendering**.
+👉 Decision: Product name is **HOTPaxel**.
+👉 To resolve this, HOTPaxel **physically separates editing and rendering**.
 
 ---
 
