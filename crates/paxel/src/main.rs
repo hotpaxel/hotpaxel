@@ -7,7 +7,8 @@ use crate::proto::hotpaxel::v1::compiler_service_server::CompilerServiceServer;
 use crate::proto::hotpaxel::v1::font_service_server::FontServiceServer;
 use crate::proto::hotpaxel::v1::system_service_server::SystemServiceServer;
 use axum::{
-    routing::{get, post},
+    response::{IntoResponse, Redirect},
+    routing::{any, get, post},
     Json, Router,
 };
 use clap::Parser;
@@ -46,14 +47,17 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
 
+    let static_path = PathBuf::from(&args.static_dir);
+    let not_found_path = static_path.join("404.html");
+
     let mut app = Router::new()
-        // API Routes
+        // API Routes (Nested under /api for better structure and isolation)
         .nest(
             "/api",
             Router::new()
                 .route("/compile", post(compiler::compile_tex))
                 .route("/fonts", get(fonts::get_fonts))
-                .route("/fonts/download/:file_name", get(fonts::download_font))
+                .route("/fonts/:file_name", get(fonts::download_font))
                 .route("/health", get(|| async { "ok" }))
                 .route(
                     "/version",
@@ -63,7 +67,8 @@ async fn main() {
                             "name": env!("CARGO_PKG_NAME")
                         }))
                     }),
-                ),
+                )
+                .fallback(any(|| async { (http::StatusCode::NOT_FOUND, "API Endpoint Not Found") })),
         );
 
     // API Documentation Serving
@@ -72,7 +77,14 @@ async fn main() {
         if docs_path.exists() {
             tracing::info!("Serving API documentation from: {:?}", docs_path);
             let serve_docs = ServeDir::new(&docs_path);
-            app = app.nest_service("/docs", serve_docs);
+            
+            // Primary route /docs/
+            app = app.nest_service("/docs/", serve_docs);
+
+            // Aliases and Redirects
+            app = app.route("/docs", get(|| async { Redirect::permanent("/docs/") }));
+            app = app.route("/doc", get(|| async { Redirect::permanent("/docs/") }));
+            app = app.route("/doc/", get(|| async { Redirect::permanent("/docs/") }));
         } else {
             tracing::warn!(
                 "Documentation directory {:?} not found, /docs serving disabled.",
@@ -83,14 +95,11 @@ async fn main() {
 
     // UI Serving
     if !args.disable_ui {
-        let static_path = PathBuf::from(&args.static_dir);
         if static_path.exists() {
             tracing::info!("Serving static files from: {:?}", static_path);
 
-            // SPA Fallback: serve index.html for any unknown route
-            let index_path = static_path.join("index.html");
-            let serve_dir = ServeDir::new(&static_path)
-                .fallback(tower_http::services::ServeFile::new(index_path));
+            // ServeDir for existing files. 
+            let serve_dir = ServeDir::new(&static_path);
 
             app = app.fallback_service(serve_dir);
         } else {
@@ -100,6 +109,23 @@ async fn main() {
             );
         }
     }
+
+    // Final Fallback for 404 (Returns actual 404 status code with custom HTML)
+    let app = if not_found_path.exists() {
+        app.fallback(any(|| async move {
+            match tokio::fs::read(not_found_path).await {
+                Ok(bytes) => axum::response::Response::builder()
+                    .status(http::StatusCode::NOT_FOUND)
+                    .header(http::header::CONTENT_TYPE, "text/html")
+                    .body(axum::body::Body::from(bytes))
+                    .unwrap()
+                    .into_response(),
+                Err(_) => (http::StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+            }
+        }))
+    } else {
+        app.fallback(any(|| async { (http::StatusCode::NOT_FOUND, "404 Not Found") }))
+    };
 
     // gRPC Services
     let grpc_compiler = CompilerServiceServer::new(grpc_compiler::MyCompiler {});

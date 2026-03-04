@@ -92,7 +92,7 @@ impl PaxelClient {
     pub fn download_font(&self, name: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let resp = self
             .client
-            .get(format!("{}/fonts/download/{}", self.host, name))
+            .get(format!("{}/api/fonts/{}", self.host, name))
             .send()?;
         if resp.status().is_success() {
             Ok(resp.bytes()?.to_vec())

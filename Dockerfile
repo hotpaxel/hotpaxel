@@ -7,9 +7,16 @@ RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 WORKDIR /app
 COPY . .
 
-# Build PAXEL (Binary)
-WORKDIR /app/crates/paxel
-RUN cargo build --release
+WORKDIR /app
+COPY . .
+
+# Build Workspace-wide but target paxel
+RUN uname -m && rustc -vV
+RUN cargo build --release -p paxel
+
+# Verify the binary in builder stage
+RUN ls -l /app/target/release/paxel && \
+    head -c 4 /app/target/release/paxel | od -A n -t x1 | grep -q "7f 45 4c 46" || (echo "❌ Invalid ELF binary" && exit 1)
 
 # Build HOT (WASM)
 WORKDIR /app/crates/hot
@@ -29,8 +36,7 @@ RUN bun run build
 # --- Stage 3: Build API Documentation ---
 FROM fe-builder AS docs-builder
 WORKDIR /app
-# buf needs either a binary or we can use the npx version. 
-# Since this is a debian-based bun image, we can run npx.
+# Generate docs using bun script (which calls buf)
 RUN bun run gen:docs
 
 # --- Stage 4: Final Runner (Single Binary) ---
