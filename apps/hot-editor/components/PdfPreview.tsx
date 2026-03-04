@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { RefreshCw, FileText, AlertCircle, Copy, Check } from 'lucide-react';
+import { RefreshCw, FileText, AlertCircle, Copy, Check, ZoomIn, ZoomOut } from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure pdf.js worker for Vite
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PdfPreviewProps {
   url: string | null;
@@ -10,6 +16,8 @@ interface PdfPreviewProps {
 
 const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefresh }) => {
   const [copied, setCopied] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [scale, setScale] = useState<number>(1.2);
 
   const handleCopy = () => {
     if (error) {
@@ -19,6 +27,13 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
     }
   };
 
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+  }
+
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3.0));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+
   return (
     <div className="flex flex-col h-full bg-slate-100 border-l border-slate-200">
       <div className="h-10 border-b border-slate-200 bg-white px-4 flex items-center justify-between shadow-sm z-10">
@@ -26,17 +41,26 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
             <FileText size={14} />
             PAXEL Preview
         </span>
-        <button 
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="text-slate-400 hover:text-brand-600 transition-colors p-1 rounded-full hover:bg-slate-100 disabled:opacity-50"
-          title="Refresh PDF"
-        >
-          <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-        </button>
+        <div className="flex items-center gap-2">
+            {url && !error && (
+                <div className="flex items-center bg-slate-100 rounded-md border border-slate-200 p-0.5 mr-2">
+                    <button onClick={zoomOut} className="p-1 hover:bg-white rounded text-slate-500 transition-colors"><ZoomOut size={14} /></button>
+                    <span className="text-xs font-mono text-slate-600 px-2 select-none w-12 text-center">{Math.round(scale * 100)}%</span>
+                    <button onClick={zoomIn} className="p-1 hover:bg-white rounded text-slate-500 transition-colors"><ZoomIn size={14} /></button>
+                </div>
+            )}
+            <button 
+              onClick={onRefresh}
+              disabled={isLoading}
+              className="text-slate-400 hover:text-brand-600 transition-colors p-1 rounded-full hover:bg-slate-100 disabled:opacity-50"
+              title="Refresh PDF"
+            >
+              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+            </button>
+        </div>
       </div>
 
-      <div className="flex-1 relative bg-slate-200 overflow-hidden flex items-center justify-center">
+      <div className="flex-1 relative bg-slate-200 overflow-auto flex flex-col items-center p-4">
         {isLoading && (
             <div className="absolute inset-0 z-20 bg-white/50 backdrop-blur-sm flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
@@ -75,14 +99,31 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
             </div>
         )}
         
-        {url ? (
-          <iframe 
-            src={url} 
-            className="w-full h-full border-none"
-            title="PDF Preview"
-          />
-        ) : !isLoading && !error && (
-          <div className="text-center p-8 text-slate-400">
+        {url && !error && (
+          <div className="pb-8 transition-transform origin-top">
+            <Document 
+              file={url} 
+              onLoadSuccess={onDocumentLoadSuccess}
+              loading={<div className="text-slate-400 text-sm py-10">Loading Document Structure...</div>}
+              error={<div className="text-red-500 text-sm py-10">Failed to load PDF.</div>}
+              className="flex flex-col gap-4 drop-shadow-lg"
+            >
+              {Array.from(new Array(numPages || 0), (_, index) => (
+                <Page 
+                  key={`page_${index + 1}`} 
+                  pageNumber={index + 1} 
+                  scale={scale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  className="bg-white"
+                />
+              ))}
+            </Document>
+          </div>
+        )}
+
+        {!url && !isLoading && !error && (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-400">
             <p>Ready to render.</p>
           </div>
         )}

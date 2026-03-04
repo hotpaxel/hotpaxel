@@ -45,8 +45,18 @@ ${texSource}
             throw new Error(errorMessage);
         }
 
-        // Response is PDF binary stream
-        const pdfBlob = await response.blob();
+        // Response is JSON containing Base64 PDF
+        const responseData = await response.json();
+
+        if (!responseData.pdf) {
+            throw new Error('Server response did not contain a valid PDF data stream.');
+        }
+
+        // Convert Base64 directly to Blob using fetch (cleaner/faster than atob)
+        const base64Url = `data:application/pdf;base64,${responseData.pdf}`;
+        const pdfResponse = await fetch(base64Url);
+        const pdfBlob = await pdfResponse.blob();
+
         const blobUrl = URL.createObjectURL(pdfBlob);
 
         return blobUrl;
