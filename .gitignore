@@ -19,3 +19,4 @@ logs
 
 # Generated Documentation
 apps/docs/
+crates/paxel/public/
