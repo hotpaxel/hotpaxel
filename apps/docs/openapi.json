@@ -1,8 +1,17 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "hotpaxel/v1/types/asset.proto",
-    "version": "version not set"
+    "title": "HOT Paxel API",
+    "description": "High-performance TeX-to-PDF compilation and font management service.",
+    "version": "0.2.1-alpha.1",
+    "contact": {
+      "name": "HOT Paxel Team",
+      "url": "https://github.com/hotpaxel/hotpaxel"
+    },
+    "license": {
+      "name": "Apache License 2.0",
+      "url": "https://github.com/hotpaxel/hotpaxel/blob/main/LICENSE"
+    }
   },
   "tags": [
     {
@@ -14,6 +23,10 @@
     {
       "name": "SystemService"
     }
+  ],
+  "schemes": [
+    "http",
+    "https"
   ],
   "consumes": [
     "application/json"
