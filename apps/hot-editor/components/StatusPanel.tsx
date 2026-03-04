@@ -12,8 +12,9 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error }) => 
   return (
     <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between text-sm">
       <div className="flex items-center gap-3">
-        <span className="font-bold text-slate-700 flex items-center gap-2">
-           HOTPAXEL <span className="text-slate-300 font-light">|</span> Tiptex
+        <span className="font-bold flex items-center">
+           <span className="text-[#ff4d4d] font-sans tracking-tight">HOT</span>
+           <span className="text-[#0f172a] font-serif ml-0.5">PAXEL</span>
         </span>
         
         <div className="h-4 w-px bg-slate-300 mx-2"></div>

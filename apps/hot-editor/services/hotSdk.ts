@@ -104,8 +104,13 @@ class HotSdkService {
         finalTex = extractedTex;
       } else {
         // Fallback to simple conversion if extraction returns empty
-        const plainText = html.replace(/<[^>]*>/g, '').trim();
-        finalTex = converter.escape_latex(plainText);
+        let processedHtml = html
+          .replace(/<\/p>/g, '\n\n') // Paragraph ends -> double newline
+          .replace(/<br\s*\/?>/g, '\n') // Line bread -> newline
+          .replace(/<[^>]*>/g, '') // Strip remaining tags
+          .trim();
+
+        finalTex = converter.escape_latex(processedHtml);
       }
 
       this.state.tex = finalTex;

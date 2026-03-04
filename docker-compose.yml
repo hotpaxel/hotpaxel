@@ -9,5 +9,11 @@ services:
     environment:
       - PORT=8888
       - STATIC_DIR=./public
+      - DOCS_DIR=./docs
       - DISABLE_UI=false
+    volumes:
+      - ./apps/hot-editor/dist:/app/public:ro
+      - ./apps/docs:/app/docs:ro
+      # Uncomment if you have local binary and want to skip re-build cycles
+      # - ./target/release/paxel:/app/paxel:ro
     restart: always
