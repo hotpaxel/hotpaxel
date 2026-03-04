@@ -13,9 +13,9 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error, onNew
   return (
     <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between text-sm">
       <div className="flex items-center gap-3">
-        <span className="font-bold flex items-center">
-           <span className="text-[#ff4d4d] font-sans tracking-tight">HOT</span>
-           <span className="text-[#0f172a] font-serif ml-0.5">Paxel</span>
+        <span className="font-bold flex items-center leading-none">
+           <span className="text-[#D90429] tracking-tight" style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 500 }}>HOT</span>
+           <span className="text-[#1A1A1A] ml-0.5" style={{ fontFamily: "'IBM Plex Serif', serif", fontWeight: 400 }}>Paxel</span>
         </span>
         
         <div className="h-4 w-px bg-slate-300 mx-2"></div>
