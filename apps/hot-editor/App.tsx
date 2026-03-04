@@ -63,7 +63,7 @@ const App: React.FC = () => {
     styleEl.innerHTML = fonts.map(f => `
       @font-face {
         font-family: '${f.family}';
-        src: url('/api/fonts/download/${encodeURIComponent(f.fileName)}');
+        src: url('/api/fonts/${encodeURIComponent(f.fileName)}');
       }
     `).join('\n');
     document.head.appendChild(styleEl);
