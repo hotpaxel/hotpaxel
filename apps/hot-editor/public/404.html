@@ -4,17 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found | HOTPAXEL</title>
+    <title>404 - Page Not Found | HOT Paxel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700&family=Lora:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --primary: #5c6bc0;
-            --primary-dark: #3949ab;
-            --bg: #0f172a;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --hot-red: #E30613;
+            /* Precise brand red from the image */
+            --paxel-black: #1A1A1A;
+            --bg: #F8F8F8;
+            /* Slight off-white background matching the image */
         }
 
         body {
@@ -22,7 +23,7 @@
             padding: 0;
             font-family: 'Outfit', -apple-system, sans-serif;
             background-color: var(--bg);
-            color: var(--text);
+            color: var(--paxel-black);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -37,82 +38,103 @@
             z-index: 10;
         }
 
-        h1 {
-            font-size: 8rem;
-            margin: 0;
+        /* Pure CSS Brand Logo matching the provided image */
+        .brand-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 0.9;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo-hot {
+            font-family: 'Outfit', sans-serif;
+            font-size: 5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 0.8;
-            margin-bottom: 1rem;
-            letter-spacing: -0.05em;
+            color: var(--hot-red);
+            letter-spacing: -0.02em;
+        }
+
+        .logo-paxel {
+            font-family: 'Lora', serif;
+            /* Serif font matching the image's "Paxel" */
+            font-size: 6rem;
+            font-weight: 400;
+            color: var(--paxel-black);
+            margin-top: -0.5rem;
+        }
+
+        .error-code {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            color: var(--hot-red);
+            letter-spacing: 0.1em;
+            opacity: 0.8;
         }
 
         h2 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 400;
             margin-bottom: 2rem;
-            color: var(--text);
+            letter-spacing: -0.02em;
         }
 
         p {
-            color: var(--text-muted);
-            margin-bottom: 3rem;
+            color: #666;
+            margin-bottom: 3.5rem;
             line-height: 1.6;
+            font-size: 1.05rem;
         }
 
         .btn {
             display: inline-block;
-            padding: 0.75rem 2rem;
-            background-color: var(--primary);
+            padding: 1rem 2.5rem;
+            background-color: var(--hot-red);
             color: white;
             text-decoration: none;
-            border-radius: 99px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            box-shadow: 0 10px 15px -3px rgba(92, 107, 192, 0.4);
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
         }
 
         .btn:hover {
-            background-color: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgba(92, 107, 192, 0.5);
+            filter: brightness(1.1);
+            box-shadow: 0 8px 25px rgba(227, 6, 19, 0.4);
         }
 
-        /* Decorative blobs */
-        .blob {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(92, 107, 192, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
-            border-radius: 50%;
-            filter: blur(40px);
-            z-index: 1;
-        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
 
-        .blob-1 {
-            top: -200px;
-            left: -200px;
-        }
-
-        .blob-2 {
-            bottom: -200px;
-            right: -200px;
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-
     <div class="container">
-        <h1>404</h1>
+        <!-- Brand Logo implemented in CSS -->
+        <div class="brand-logo">
+            <div class="logo-hot">HOT</div>
+            <div class="logo-paxel">Paxel</div>
+        </div>
+
+        <div class="error-code">ERROR 404</div>
         <h2>페이지를 찾을 수 없습니다</h2>
-        <p>요청하신 페이지가 존재하지 않거나, 다른 주소로 옮겨졌을 수 있습니다.<br>아래 버튼을 클릭하여 메인 에디터로 돌아가실 수 있습니다.</p>
-        <a href="/" class="btn">메인으로 돌아가기</a>
+        <p>요청하신 경로가 올바르지 않거나 변경되었을 수 있습니다.<br><strong>HOT Paxel</strong>의 스마트한 문서 작업 환경으로 돌아가보세요.</p>
+        <a href="/" class="btn">Back to Editor</a>
     </div>
 </body>
 

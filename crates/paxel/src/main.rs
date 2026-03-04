@@ -16,6 +16,7 @@ use http_body_util::BodyExt;
 use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use tower::util::service_fn;
 use tower_http::services::ServeDir;
 
 #[derive(Parser, Debug)]
@@ -93,39 +94,31 @@ async fn main() {
         }
     }
 
-    // UI Serving
-    if !args.disable_ui {
-        if static_path.exists() {
-            tracing::info!("Serving static files from: {:?}", static_path);
-
-            // ServeDir for existing files. 
-            let serve_dir = ServeDir::new(&static_path);
-
-            app = app.fallback_service(serve_dir);
-        } else {
-            tracing::warn!(
-                "Static directory {:?} not found, UI serving disabled.",
-                static_path
-            );
-        }
-    }
-
-    // Final Fallback for 404 (Returns actual 404 status code with custom HTML)
-    let app = if not_found_path.exists() {
-        app.fallback(any(|| async move {
-            match tokio::fs::read(not_found_path).await {
-                Ok(bytes) => axum::response::Response::builder()
-                    .status(http::StatusCode::NOT_FOUND)
-                    .header(http::header::CONTENT_TYPE, "text/html")
-                    .body(axum::body::Body::from(bytes))
-                    .unwrap()
-                    .into_response(),
-                Err(_) => (http::StatusCode::NOT_FOUND, "404 Not Found").into_response(),
-            }
-        }))
+    // UI Serving (Must be combined with fallback logic to avoid overwriting)
+    if !args.disable_ui && static_path.exists() {
+        tracing::info!("Serving static files from: {:?}", static_path);
+        let serve_dir = ServeDir::new(&static_path);
+        
+        // Final Fallback: First try static files, then our custom 404 page
+        app = app.fallback_service(
+            serve_dir.fallback(service_fn(move |req: http::Request<axum::body::Body>| {
+                let not_found_path = not_found_path.clone();
+                async move {
+                    match tokio::fs::read(not_found_path).await {
+                        Ok(bytes) => Ok(axum::response::Response::builder()
+                            .status(http::StatusCode::NOT_FOUND)
+                            .header(http::header::CONTENT_TYPE, "text/html")
+                            .body(axum::body::Body::from(bytes))
+                            .unwrap()),
+                        Err(_) => Ok((http::StatusCode::NOT_FOUND, "404 Not Found").into_response()),
+                    }
+                }
+            }))
+        );
     } else {
-        app.fallback(any(|| async { (http::StatusCode::NOT_FOUND, "404 Not Found") }))
-    };
+        // No UI, just simple 404
+        app = app.fallback(any(|| async { (http::StatusCode::NOT_FOUND, "404 Not Found") }));
+    }
 
     // gRPC Services
     let grpc_compiler = CompilerServiceServer::new(grpc_compiler::MyCompiler {});
