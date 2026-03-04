@@ -82,6 +82,13 @@ const App: React.FC = () => {
       
       // Auto-refresh PDF logic
       if (status === SdkStatus.SUCCESS || (status === SdkStatus.IDLE && state.tex)) {
+        // Skip rendering if tex is effectively empty (only whitespace or empty string)
+        const isTexEmpty = !state.tex || state.tex.replace(/\\[\s\S]/g, '').trim() === '';
+        
+        if (isTexEmpty) {
+          setPdfUrl(null);
+          return;
+        }
         handlePdfRefresh(state.tex, selectedFontFamily, selectedFontSize);
       }
     });

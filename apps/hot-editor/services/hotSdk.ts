@@ -99,18 +99,48 @@ class HotSdkService {
       const extractedTex = converter.extract_hot_tex(wrappedHtml);
 
       let finalTex: string;
-      if (extractedTex && extractedTex.length > 0) {
-        // If v0.2 WASM extraction succeeded, use it
+      // Normalize HTML to check if it's truly empty (ignoring empty tags like <p></p>)
+      const textOnly = html.replace(/<[^>]*>/g, '').trim();
+
+      if (textOnly === '' && !html.includes('<img')) {
+        // If no text and no images/assets, it's effectively empty
+        finalTex = '';
+      } else if (extractedTex && extractedTex.includes('%% HOT-TEX-START %%')) {
+        // If v0.2 WASM extraction found actual Round-trip markers, use it
         finalTex = extractedTex;
       } else {
-        // Fallback to simple conversion if extraction returns empty
-        let processedHtml = html
-          .replace(/<\/p>/g, '\n\n') // Paragraph ends -> double newline
-          .replace(/<br\s*\/?>/g, '\n') // Line bread -> newline
-          .replace(/<[^>]*>/g, '') // Strip remaining tags
-          .trim();
+        // Fallback to manual conversion for rich text without markers
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-        finalTex = converter.escape_latex(processedHtml);
+        // Helper to process nodes recursively
+        const processNode = (node: Node): string => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            return converter.escape_latex(node.textContent || '');
+          }
+
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as Element;
+            let content = '';
+
+            for (const child of Array.from(el.childNodes)) {
+              content += processNode(child);
+            }
+
+            if (el.tagName === 'P' || el.tagName === 'DIV') {
+              return content + '\n\n';
+            }
+            if (el.tagName === 'BR') {
+              return ' \\\\ \n';
+            }
+            return content;
+          }
+          return '';
+        };
+
+        finalTex = processNode(doc.body).trim();
+        // Final normalization to ensure paragraph breaks are exactly \n\n
+        finalTex = finalTex.replace(/\n\n+/g, '\n\n');
       }
 
       this.state.tex = finalTex;
