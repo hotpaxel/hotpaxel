@@ -7,9 +7,6 @@ RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 WORKDIR /app
 COPY . .
 
-WORKDIR /app
-COPY . .
-
 # Build Workspace-wide but target paxel
 RUN uname -m && rustc -vV
 RUN cargo build --release -p paxel
@@ -36,6 +33,9 @@ RUN bun run build
 # --- Stage 3: Build API Documentation ---
 FROM fe-builder AS docs-builder
 WORKDIR /app
+# Install jq for title injection
+USER root
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
 # Generate docs using bun script (which calls buf)
 RUN bun run gen:docs
 

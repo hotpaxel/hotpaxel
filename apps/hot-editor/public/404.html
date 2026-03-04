@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -51,7 +51,7 @@
 
         .logo-hot {
             font-family: 'Outfit', sans-serif;
-            font-size: 5rem;
+            font-size: 5.5rem;
             font-weight: 700;
             color: var(--hot-red);
             letter-spacing: -0.02em;
@@ -60,10 +60,10 @@
         .logo-paxel {
             font-family: 'Lora', serif;
             /* Serif font matching the image's "Paxel" */
-            font-size: 6rem;
+            font-size: 6.5rem;
             font-weight: 400;
             color: var(--paxel-black);
-            margin-top: -0.5rem;
+            margin-top: -0.8rem;
         }
 
         .error-code {
@@ -76,7 +76,7 @@
         }
 
         h2 {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 400;
             margin-bottom: 2rem;
             letter-spacing: -0.02em;
@@ -86,12 +86,12 @@
             color: #666;
             margin-bottom: 3.5rem;
             line-height: 1.6;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
         }
 
         .btn {
             display: inline-block;
-            padding: 1rem 2.5rem;
+            padding: 1.2rem 3rem;
             background-color: var(--hot-red);
             color: white;
             text-decoration: none;
@@ -99,20 +99,24 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.15em;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
         }
 
         .btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             filter: brightness(1.1);
-            box-shadow: 0 8px 25px rgba(227, 6, 19, 0.4);
+            box-shadow: 0 10px 30px rgba(227, 6, 19, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
         }
 
         @keyframes fadeInDown {
             from {
                 opacity: 0;
-                transform: translateY(-30px);
+                transform: translateY(-40px);
             }
 
             to {
@@ -131,10 +135,11 @@
             <div class="logo-paxel">Paxel</div>
         </div>
 
-        <div class="error-code">ERROR 404</div>
-        <h2>페이지를 찾을 수 없습니다</h2>
-        <p>요청하신 경로가 올바르지 않거나 변경되었을 수 있습니다.<br><strong>HOT Paxel</strong>의 스마트한 문서 작업 환경으로 돌아가보세요.</p>
-        <a href="/" class="btn">Back to Editor</a>
+        <div class="error-code">404 ERROR</div>
+        <h2>Oops! Page Not Found</h2>
+        <p>The page you are looking for might have been removed,<br>had its name changed, or is temporarily unavailable.
+        </p>
+        <a href="/" class="btn">Return to Editor</a>
     </div>
 </body>
 

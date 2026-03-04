@@ -4,27 +4,6 @@ package hotpaxel.v1;
 option go_package = "hotpaxel/v1";
 
 import "hotpaxel/v1/types/compile.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
-
-option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-  info: {
-    title: "HOT Paxel API";
-    version: "0.2.1-alpha.1";
-    description: "High-performance TeX-to-PDF compilation and font management service.";
-    contact: {
-      name: "HOT Paxel Team";
-      url: "https://github.com/hotpaxel/hotpaxel";
-    };
-    license: {
-      name: "Apache License 2.0";
-      url: "https://github.com/hotpaxel/hotpaxel/blob/main/LICENSE";
-    };
-  };
-  schemes: HTTP;
-  schemes: HTTPS;
-  consumes: "application/json";
-  produces: "application/json";
-};
 
 service CompilerService {
   rpc Compile(CompileRequest) returns (stream CompileResponse);

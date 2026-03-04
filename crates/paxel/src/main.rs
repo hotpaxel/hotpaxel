@@ -51,8 +51,43 @@ async fn main() {
     let static_path = PathBuf::from(&args.static_dir);
     let not_found_path = static_path.join("404.html");
 
+    // Common Fallback Handler
+    let common_fallback = {
+        let not_found_path = not_found_path.clone();
+        service_fn(move |req: http::Request<axum::body::Body>| {
+            let not_found_path = not_found_path.clone();
+            let uri = req.uri().path().to_string();
+            
+            async move {
+                if uri.starts_with("/api") {
+                    // JSON 404 for API routes
+                    let body = json!({
+                        "error": "Not Found",
+                        "message": format!("API endpoint '{}' not found", uri),
+                        "status": 404
+                    });
+                    Ok(axum::response::Response::builder()
+                        .status(http::StatusCode::NOT_FOUND)
+                        .header(http::header::CONTENT_TYPE, "application/json")
+                        .body(axum::body::Body::from(body.to_string()))
+                        .unwrap())
+                } else {
+                    // HTML 404 for UI and Docs
+                    match tokio::fs::read(&not_found_path).await {
+                        Ok(bytes) => Ok(axum::response::Response::builder()
+                            .status(http::StatusCode::NOT_FOUND)
+                            .header(http::header::CONTENT_TYPE, "text/html")
+                            .body(axum::body::Body::from(bytes))
+                            .unwrap()),
+                        Err(_) => Ok((http::StatusCode::NOT_FOUND, "404 Not Found").into_response()),
+                    }
+                }
+            }
+        })
+    };
+
     let mut app = Router::new()
-        // API Routes (Nested under /api for better structure and isolation)
+        // API Routes
         .nest(
             "/api",
             Router::new()
@@ -68,8 +103,7 @@ async fn main() {
                             "name": env!("CARGO_PKG_NAME")
                         }))
                     }),
-                )
-                .fallback(any(|| async { (http::StatusCode::NOT_FOUND, "API Endpoint Not Found") })),
+                ),
         );
 
     // API Documentation Serving
@@ -77,20 +111,14 @@ async fn main() {
         let docs_path = PathBuf::from(&args.docs_dir);
         if docs_path.exists() {
             tracing::info!("Serving API documentation from: {:?}", docs_path);
-            let serve_docs = ServeDir::new(&docs_path);
             
-            // Primary route /docs/
-            app = app.nest_service("/docs/", serve_docs);
+            // Primary route /docs/ with fallback
+            app = app.nest_service("/docs/", ServeDir::new(&docs_path).fallback(common_fallback.clone()));
 
             // Aliases and Redirects
             app = app.route("/docs", get(|| async { Redirect::permanent("/docs/") }));
             app = app.route("/doc", get(|| async { Redirect::permanent("/docs/") }));
             app = app.route("/doc/", get(|| async { Redirect::permanent("/docs/") }));
-        } else {
-            tracing::warn!(
-                "Documentation directory {:?} not found, /docs serving disabled.",
-                docs_path
-            );
         }
     }
 
@@ -99,25 +127,11 @@ async fn main() {
         tracing::info!("Serving static files from: {:?}", static_path);
         let serve_dir = ServeDir::new(&static_path);
         
-        // Final Fallback: First try static files, then our custom 404 page
-        app = app.fallback_service(
-            serve_dir.fallback(service_fn(move |req: http::Request<axum::body::Body>| {
-                let not_found_path = not_found_path.clone();
-                async move {
-                    match tokio::fs::read(not_found_path).await {
-                        Ok(bytes) => Ok(axum::response::Response::builder()
-                            .status(http::StatusCode::NOT_FOUND)
-                            .header(http::header::CONTENT_TYPE, "text/html")
-                            .body(axum::body::Body::from(bytes))
-                            .unwrap()),
-                        Err(_) => Ok((http::StatusCode::NOT_FOUND, "404 Not Found").into_response()),
-                    }
-                }
-            }))
-        );
+        // Final Fallback: First try static files, then our custom 404 logic
+        app = app.fallback_service(serve_dir.fallback(common_fallback));
     } else {
         // No UI, just simple 404
-        app = app.fallback(any(|| async { (http::StatusCode::NOT_FOUND, "404 Not Found") }));
+        app = app.fallback_service(common_fallback);
     }
 
     // gRPC Services

@@ -16,8 +16,14 @@ fi
 
 echo "🎨 Copying specification and creating Scalar HTML at apps/docs/..."
 
-# Copy the JSON file to apps/docs for external access and cleaner loading
-cp gen/openapi/openapi.swagger.json apps/docs/openapi.json
+# Copy the JSON file and inject metadata using jq
+# This avoids breaking Rust build system with proto annotations
+jq '.info.title = "HOT Paxel API" | 
+    .info.description = "High-performance TeX-to-PDF compilation and font management service." | 
+    .info.version = "0.2.1-alpha.1" |
+    .info.contact = {"name": "HOT Paxel Team", "url": "https://github.com/hotpaxel/hotpaxel"} |
+    .info.license = {"name": "Apache License 2.0", "url": "https://github.com/hotpaxel/hotpaxel/blob/main/LICENSE"}' \
+    gen/openapi/openapi.swagger.json > apps/docs/openapi.json
 
 # Create the HTML file using Scalar Web Component (referencing the JSON file)
 cat <<EOF > apps/docs/index.html
