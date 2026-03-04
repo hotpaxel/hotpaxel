@@ -15,8 +15,8 @@ class HotSdkService {
   private status: SdkStatus = SdkStatus.SUCCESS;
 
   private state: HotDocumentState = {
-    html: '<p>Welcome to <strong>HOTPAXEL</strong>.</p><p>Start typing to generate TeX...</p>',
-    tex: '\\textbf{Welcome to HOTPAXEL}.',
+    html: '<p>Welcome to <strong>HOTPaxel</strong>.</p><p>Start typing to generate TeX...</p>',
+    tex: '\\textbf{Welcome to HOTPaxel}.',
     lastUpdated: new Date(),
     version: 1
   };
@@ -86,7 +86,7 @@ class HotSdkService {
   }
 
   /**
-   * Simulates the core "Safety" logic of HOTPAXEL.
+   * Simulates the core "Safety" logic of HOTPaxel.
    * Checks for broken tokens or invalid structures.
    */
   private async performRoundTripCheck(html: string) {
@@ -127,6 +127,19 @@ class HotSdkService {
     }
   }
 
+
+  public newDocument() {
+    this.state = {
+      html: '',
+      tex: '',
+      lastUpdated: new Date(),
+      version: 1
+    };
+    this.status = SdkStatus.SUCCESS;
+    this.error = undefined;
+    if (this.processingTimer) clearTimeout(this.processingTimer);
+    this.notify();
+  }
 
   public getCurrentPdfUrl(): string {
     // Returns a dummy PDF URL based on success state

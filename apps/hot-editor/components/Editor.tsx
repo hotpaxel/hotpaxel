@@ -55,6 +55,13 @@ const EditorComponent: React.FC<EditorProps> = ({
     };
   }, [editor]);
 
+  // Sync editor content when initialContent changes (e.g. from newDocument)
+  useEffect(() => {
+    if (editor && initialContent !== editor.getHTML()) {
+      editor.commands.setContent(initialContent);
+    }
+  }, [initialContent, editor]);
+
   return (
     <div className="flex flex-col h-full bg-white relative">
       <Toolbar 

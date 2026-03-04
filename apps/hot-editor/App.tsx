@@ -101,6 +101,7 @@ const App: React.FC = () => {
         status={sdkStatus} 
         error={errorMessage} 
         version={documentState.version} 
+        onNew={() => hotSdk.newDocument()}
       />
 
       {/* 2. Critical Error Banner (Constraint: Must clearly show failure) */}

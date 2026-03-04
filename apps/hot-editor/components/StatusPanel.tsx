@@ -1,14 +1,15 @@
 import React from 'react';
 import { SdkStatus, FontInfo } from '../types';
-import { CheckCircle2, AlertTriangle, Loader2, Type } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Loader2, FilePlus } from 'lucide-react';
 
 interface StatusPanelProps {
   status: SdkStatus;
   version: number;
   error?: string;
+  onNew?: () => void;
 }
 
-const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error }) => {
+const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error, onNew }) => {
   return (
     <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between text-sm">
       <div className="flex items-center gap-3">
@@ -54,6 +55,17 @@ const StatusPanel: React.FC<StatusPanelProps> = ({ status, version, error }) => 
       </div>
 
       <div className="flex items-center gap-4 text-xs text-slate-400 font-mono">
+        {onNew && (
+          <button 
+            onClick={onNew}
+            className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors font-sans font-medium"
+            title="Create a new document (Reset editor)"
+          >
+            <FilePlus size={14} /> 
+            New
+          </button>
+        )}
+        <div className="h-4 w-px bg-slate-200"></div>
         <span>v.{version}</span>
         {error && (
             <span className="text-red-500 font-sans max-w-md truncate bg-red-50 px-2 py-0.5 rounded border border-red-100">
