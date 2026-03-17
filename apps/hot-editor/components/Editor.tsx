@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { FontSize } from './extensions/FontSize';
@@ -17,6 +18,7 @@ interface EditorProps {
   onFontChange: (font: string) => void;
   selectedFontSize: string;
   onFontSizeChange: (size: string) => void;
+  onAddAsset: (name: string, content: string) => void;
 }
 
 const EditorComponent: React.FC<EditorProps> = ({ 
@@ -25,11 +27,15 @@ const EditorComponent: React.FC<EditorProps> = ({
   selectedFont, 
   onFontChange,
   selectedFontSize,
-  onFontSizeChange
+  onFontSizeChange,
+  onAddAsset
 }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Image.configure({
+        allowBase64: true,
+      }),
       TextStyle,
       FontFamily,
       FontSize,
@@ -71,6 +77,7 @@ const EditorComponent: React.FC<EditorProps> = ({
         onFontChange={onFontChange}
         selectedFontSize={selectedFontSize}
         onFontSizeChange={onFontSizeChange}
+        onAddAsset={onAddAsset}
       />
       <div 
         className="flex-1 overflow-y-auto bg-slate-50 cursor-text editor-wrapper" 

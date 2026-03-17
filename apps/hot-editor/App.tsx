@@ -3,166 +3,212 @@ import EditorComponent from './components/Editor';
 import PdfPreview from './components/PdfPreview';
 import StatusPanel from './components/StatusPanel';
 import { hotSdk } from './services/hotSdk';
-import { generatePdfPreview, revokePdfUrl, fetchFonts } from './services/paxelServer';
-import { SdkStatus, HotDocumentState, FontInfo } from './types';
+import { generatePdfPreview, fetchFonts } from './services/paxelServer';
+import { SdkStatus, HotDocumentState, FontInfo, Asset } from './types';
 import { AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
-  // Application State derived from HOT SDK
-  // We do not modify these directly from UI events, only via SDK subscription.
+  // 1. Application State
   const [sdkStatus, setSdkStatus] = useState<SdkStatus>(SdkStatus.IDLE);
   const [documentState, setDocumentState] = useState<HotDocumentState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   
-  // Font State
+  // 2. Settings (Paxel Endpoint)
+  const [paxelEndpoint, setPaxelEndpoint] = useState(() => {
+    // Force a valid default if localStorage is empty or looks like garbage (e.g. contains TeX)
+    const saved = localStorage.getItem('hotpaxel_endpoint');
+    if (saved && saved.startsWith('http')) return saved;
+    return 'http://localhost:8888/api';
+  });
+
+  // 3. User Preferences & Assets
   const [fonts, setFonts] = useState<FontInfo[]>([]);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('NanumGothic');
   const [selectedFontSize, setSelectedFontSize] = useState<string>('12pt');
 
-  // PDF Preview State
+  // 4. Preview State
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfDuration, setPdfDuration] = useState<number | null>(null);
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
   const [renderError, setRenderError] = useState<string | null>(null);
 
-  // Handler for PDF Generation
-  const handlePdfRefresh = useCallback(async (texSource: string, fontFamily?: string, fontSize?: string) => {
+  // PDF Generation Logic
+  const handlePdfRefresh = useCallback(async (
+    texSource: string, 
+    fontFamily: string, 
+    fontSize: string, 
+    assets: Asset[] = [],
+    requiredFonts: string[] = []
+  ) => {
+    if (!texSource || !paxelEndpoint.startsWith('http')) return;
+    
     setIsPdfLoading(true);
-    setRenderError(null); // Clear previous errors
+    setRenderError(null);
     try {
-      const url = await generatePdfPreview(texSource, fontFamily, fontSize);
+      const { url, durationMs } = await generatePdfPreview(paxelEndpoint, texSource, fontFamily, fontSize, assets, requiredFonts);
       
-      // Clean up previous blob URL to prevent memory leaks
       setPdfUrl(prevUrl => {
-        if (prevUrl) revokePdfUrl(prevUrl);
+        if (prevUrl) URL.revokeObjectURL(prevUrl);
         return url;
       });
+      setPdfDuration(durationMs);
     } catch (e: any) {
-      console.error("Failed to load PDF", e);
-      setRenderError(e.message || "An unknown error occurred during PDF generation.");
+      console.error("[PAXEL] Error refreshing PDF:", e);
+      setRenderError(e.message || "Failed to connect to Paxel server.");
+      setPdfDuration(null);
     } finally {
       setIsPdfLoading(false);
     }
-  }, []);
+  }, [paxelEndpoint]);
 
-  // Fetch fonts on mount
+  // Load fonts and save endpoint
   useEffect(() => {
-    fetchFonts().then((fetchedFonts) => {
-      setFonts(fetchedFonts);
-      if (fetchedFonts.length > 0 && !fetchedFonts.find(f => f.family === selectedFontFamily)) {
-        const defaultFont = fetchedFonts.find(f => f.family.includes('Nanum')) || fetchedFonts[0];
-        setSelectedFontFamily(defaultFont.family);
-      }
-    });
-  }, []);
+    if (paxelEndpoint.startsWith('http')) {
+        localStorage.setItem('hotpaxel_endpoint', paxelEndpoint);
+        fetchFonts(paxelEndpoint).then(fetched => {
+            if (fetched && fetched.length > 0) {
+                setFonts(fetched);
+                // Ensure default font exists in list
+                if (!fetched.find(f => f.family === selectedFontFamily)) {
+                    const fallback = fetched.find(f => f.family.includes('Nanum')) || fetched[0];
+                    setSelectedFontFamily(fallback.family);
+                }
+            }
+        });
+    }
+  }, [paxelEndpoint]);
 
-  // Dynamically inject @font-face for the loaded fonts
+  // Inject Font Faces
   useEffect(() => {
     if (fonts.length === 0) return;
-    
     const styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-fonts';
     styleEl.innerHTML = fonts.map(f => `
       @font-face {
         font-family: '${f.family}';
-        src: url('/api/fonts/${encodeURIComponent(f.fileName)}');
+        src: url('${paxelEndpoint}/fonts/${encodeURIComponent(f.fileName)}');
       }
     `).join('\n');
     document.head.appendChild(styleEl);
-    
     return () => {
-      document.head.removeChild(styleEl);
+        const existing = document.getElementById('dynamic-fonts');
+        if (existing) document.head.removeChild(existing);
     };
-  }, [fonts]);
+  }, [fonts, paxelEndpoint]);
 
-  // 1. Subscribe to HOT SDK changes
+  // SDK Subscription
   useEffect(() => {
     const unsubscribe = hotSdk.subscribe((status, state, error) => {
       setSdkStatus(status);
-      setDocumentState({ ...state }); // Copy to trigger re-render
+      setDocumentState({ ...state });
       setErrorMessage(error);
       
-      // Auto-refresh PDF logic
+      // Auto-trigger PDF refresh
       if (status === SdkStatus.SUCCESS || (status === SdkStatus.IDLE && state.tex)) {
-        // Skip rendering if tex is effectively empty (only whitespace or empty string)
         const isTexEmpty = !state.tex || state.tex.replace(/\\[\s\S]/g, '').trim() === '';
-        
         if (isTexEmpty) {
           setPdfUrl(null);
+          setPdfDuration(null);
           return;
         }
-        handlePdfRefresh(state.tex, selectedFontFamily, selectedFontSize);
+        handlePdfRefresh(state.tex, selectedFontFamily, selectedFontSize, state.assets, state.requiredFonts);
       }
     });
 
     return () => unsubscribe();
   }, [handlePdfRefresh, selectedFontFamily, selectedFontSize]);
 
+  // Action Handlers
+  const handleSave = () => {
+    if (!documentState) return;
+    const blob = new Blob([JSON.stringify(documentState, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `paxel_${Date.now()}.hotpaxel`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoad = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const state = JSON.parse(e.target?.result as string);
+          if (state.html) {
+            hotSdk.newDocument();
+            if (state.assets) state.assets.forEach((a: Asset) => hotSdk.addAsset(a.name, a.content));
+            hotSdk.updateHtml(state.html);
+          }
+        } catch (err) {
+          alert('Invalid file format');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   if (!documentState) {
-    return <div className="flex items-center justify-center h-screen text-slate-400">Loading HOT SDK...</div>;
+    return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-50 gap-4">
+            <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
+            <div className="text-slate-400 font-medium animate-pulse">Initializing HOT SDK...</div>
+        </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      
-      {/* 1. Top Status Bar - The Source of Truth Display */}
+    <div className="flex flex-col h-screen overflow-hidden bg-white text-slate-900 font-sans">
+      {/* 1. Header */}
       <StatusPanel 
         status={sdkStatus} 
-        error={errorMessage} 
         version={documentState.version} 
+        errorMessage={errorMessage}
         onNew={() => hotSdk.newDocument()}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        paxelEndpoint={paxelEndpoint}
+        onEndpointChange={setPaxelEndpoint}
       />
 
-      {/* 2. Critical Error Banner (Constraint: Must clearly show failure) */}
+      {/* 2. Error Banner */}
       {sdkStatus === SdkStatus.FAILURE && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={18} />
-          <div>
-            <h3 className="text-sm font-bold text-red-800">Round-trip Verification Failed</h3>
-            <p className="text-sm text-red-700 mt-1">
-              The generated HTML cannot be safely converted back to TeX. 
-              Editing is still enabled, but PDF generation is paused until the error is resolved.
-            </p>
-            {errorMessage && (
-                <code className="block mt-2 bg-red-100 p-2 rounded text-xs text-red-900 font-mono">
-                    {errorMessage}
-                </code>
-            )}
-          </div>
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-3 shrink-0">
+          <AlertCircle className="text-red-500" size={16} />
+          <span className="text-xs text-red-800 font-bold">Round-trip Verification Failed: </span>
+          <span className="text-xs text-red-700 truncate">{errorMessage || "Invalid TeX content detected."}</span>
         </div>
       )}
 
-      {/* 3. Main Workspace - Split Pane */}
-      <div className="flex-1 flex overflow-hidden">
-        
-        {/* Left: Editor (Input) */}
-        <div className="w-1/2 flex flex-col border-r border-slate-200 relative">
+      {/* 3. Split Main View */}
+      <main className="flex-1 flex overflow-hidden">
+        {/* Left Side: Editors */}
+        <div className="w-1/2 flex flex-col border-r border-slate-200 bg-white">
           <EditorComponent 
             initialContent={documentState.html}
             onUpdateStatus={setSdkStatus}
             fonts={fonts}
             selectedFont={selectedFontFamily}
-            onFontChange={(f) => {
-              setSelectedFontFamily(f);
-              if (documentState.tex) handlePdfRefresh(documentState.tex, f, selectedFontSize);
-            }}
+            onFontChange={setSelectedFontFamily}
             selectedFontSize={selectedFontSize}
-            onFontSizeChange={(s) => {
-              setSelectedFontSize(s);
-              if (documentState.tex) handlePdfRefresh(documentState.tex, selectedFontFamily, s);
-            }}
+            onFontSizeChange={setSelectedFontSize}
+            onAddAsset={(name, content) => hotSdk.addAsset(name, content)}
           />
         </div>
 
-        {/* Right: PDF Preview (Output) */}
-        <div className="w-1/2 bg-slate-100 relative">
+        {/* Right Side: Preview */}
+        <div className="w-1/2 flex flex-col bg-slate-100">
            <PdfPreview 
-             url={pdfUrl} 
-             isLoading={isPdfLoading}
-             error={renderError}
-             onRefresh={() => documentState && handlePdfRefresh(documentState.tex, selectedFontFamily)}
-           />
+                pdfUrl={pdfUrl} 
+                isLoading={isPdfLoading} 
+                error={renderError}
+                durationMs={pdfDuration}
+                onRefresh={() => handlePdfRefresh(documentState.tex, selectedFontFamily, selectedFontSize, documentState.assets, documentState.requiredFonts)}
+            />
         </div>
-
-      </div>
+      </main>
     </div>
   );
 };

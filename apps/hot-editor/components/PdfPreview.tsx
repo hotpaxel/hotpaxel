@@ -7,14 +7,9 @@ import 'react-pdf/dist/Page/TextLayer.css';
 // Configure pdf.js worker for Vite
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-interface PdfPreviewProps {
-  url: string | null;
-  isLoading: boolean;
-  error: string | null;
-  onRefresh: () => void;
-}
+import { PdfPreviewProps } from '../types';
 
-const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefresh }) => {
+const PdfPreview: React.FC<PdfPreviewProps> = ({ pdfUrl, isLoading, error, durationMs, onRefresh }) => {
   const [copied, setCopied] = useState(false);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState<number>(1.2);
@@ -27,9 +22,9 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
     }
   };
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-  }
+  };
 
   const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3.0));
   const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
@@ -37,12 +32,17 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
   return (
     <div className="flex flex-col h-full bg-slate-100 border-l border-slate-200">
       <div className="h-10 border-b border-slate-200 bg-white px-4 flex items-center justify-between shadow-sm z-10">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+        <span className="text-xs font-bold text-slate-500 tracking-wider flex items-center gap-2">
             <FileText size={14} />
-            PAXEL Preview
+            Paxel Preview
+            {durationMs != null && !isLoading && !error && (
+              <span className="text-[10px] text-slate-400 font-mono font-normal ml-2">
+                ({durationMs.toLocaleString()}ms)
+              </span>
+            )}
         </span>
         <div className="flex items-center gap-2">
-            {url && !error && (
+            {pdfUrl && !error && (
                 <div className="flex items-center bg-slate-100 rounded-md border border-slate-200 p-0.5 mr-2">
                     <button onClick={zoomOut} className="p-1 hover:bg-white rounded text-slate-500 transition-colors"><ZoomOut size={14} /></button>
                     <span className="text-xs font-mono text-slate-600 px-2 select-none w-12 text-center">{Math.round(scale * 100)}%</span>
@@ -99,10 +99,10 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
             </div>
         )}
         
-        {url && !error && (
+        {pdfUrl && !error && (
           <div className="pb-8 transition-transform origin-top">
             <Document 
-              file={url} 
+              file={pdfUrl} 
               onLoadSuccess={onDocumentLoadSuccess}
               loading={<div className="text-slate-400 text-sm py-10">Loading Document Structure...</div>}
               error={<div className="text-red-500 text-sm py-10">Failed to load PDF.</div>}
@@ -122,7 +122,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ url, isLoading, error, onRefres
           </div>
         )}
 
-        {!url && !isLoading && !error && (
+        {!pdfUrl && !isLoading && !error && (
           <div className="absolute inset-0 flex items-center justify-center text-slate-400">
             <p>Ready to render.</p>
           </div>

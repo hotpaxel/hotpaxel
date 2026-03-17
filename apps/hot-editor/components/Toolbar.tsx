@@ -11,7 +11,8 @@ import {
   Box,
   Braces,
   Stamp,
-  FileSignature
+  FileSignature,
+  ImagePlus
 } from 'lucide-react';
 import { FontInfo } from '../types';
 
@@ -22,6 +23,7 @@ interface ToolbarProps {
   onFontChange: (font: string) => void;
   selectedFontSize: string;
   onFontSizeChange: (size: string) => void;
+  onAddAsset: (name: string, content: string) => void;
 }
 
 const fontSizes = ['10pt', '11pt', '12pt', '14pt', '16pt', '18pt', '20pt', '24pt'];
@@ -32,11 +34,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
   selectedFont, 
   onFontChange,
   selectedFontSize,
-  onFontSizeChange
+  onFontSizeChange,
+  onAddAsset
 }) => {
   if (!editor) {
     return null;
   }
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const insertToken = (type: string, value: string, label: string) => {
     editor.chain().focus().insertContent({
@@ -45,14 +50,42 @@ const Toolbar: React.FC<ToolbarProps> = ({
     }).run();
   };
 
+  const currentFont = editor.getAttributes('textStyle').fontFamily || selectedFont;
+  const currentFontSize = editor.getAttributes('textStyle').fontSize || selectedFontSize;
+
   const handleFontChange = (fontFamily: string) => {
-    onFontChange(fontFamily);
+    // We only apply to selection/cursor. 
+    // Global base font is managed separately in App.tsx but passed as default.
     editor.chain().focus().setFontFamily(fontFamily).run();
   };
 
   const handleFontSizeChange = (size: string) => {
-    onFontSizeChange(size);
     editor.chain().focus().setFontSize(size).run();
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          // Extract base64 part
+          const base64Content = result.split(',')[1];
+          onAddAsset(file.name, base64Content);
+          
+          // Insert image into editor
+          editor.chain().focus().setImage({ 
+            src: result,
+            // @ts-ignore - custom attribute for HOT SDK to track filename
+            'data-filename': file.name 
+          }).run();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input
+    if (event.target) event.target.value = '';
   };
 
   const ButtonClass = (isActive: boolean) => 
@@ -70,20 +103,20 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <div className="flex items-center gap-1.5 pr-2 border-r border-slate-200">
            <select 
              className={SelectClass}
-             value={selectedFont}
+             value={currentFont}
              onChange={(e) => handleFontChange(e.target.value)}
-             title="Font Family"
+             title="Inline Font Family (Selection)"
            >
              {fonts.map(f => (
-               <option key={f.family} value={f.family}>{f.family}</option>
+                <option key={f.family} value={f.family}>{f.family}</option>
              ))}
            </select>
 
            <select 
              className={SelectClass}
-             value={selectedFontSize}
+             value={currentFontSize}
              onChange={(e) => handleFontSizeChange(e.target.value)}
-             title="Font Size"
+             title="Inline Font Size (Selection)"
            >
              {fontSizes.map(size => (
                <option key={size} value={size}>{size}</option>
@@ -173,6 +206,23 @@ const Toolbar: React.FC<ToolbarProps> = ({
         >
           <Stamp size={14} /> Party
         </button>
+
+        <div className="w-px h-6 bg-slate-300 mx-1"></div>
+
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded border border-blue-100 transition-colors"
+          title="Upload image or file"
+        >
+          <ImagePlus size={14} /> Upload File
+        </button>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*"
+          onChange={handleFileUpload}
+        />
       </div>
     </div>
   );
