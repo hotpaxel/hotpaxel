@@ -1,6 +1,6 @@
 services:
   hotpaxel:
-    image: hotpaxel/hotpaxel:0.2.1-alpha.1
+    image: hotpaxel/hotpaxel:0.2.1-alpha.2
     build:
       context: .
       dockerfile: Dockerfile
