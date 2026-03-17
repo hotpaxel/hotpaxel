@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:docs": "./scripts/generate-docs.sh",
+    "install": "cargo install --path crates/hot",
     "clean": "cargo clean && bunx turbo run clean && rm -rf .turbo",
     "purge": "bun run clean && find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +"
   },
