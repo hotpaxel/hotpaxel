@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [pdfDuration, setPdfDuration] = useState<number | null>(null);
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<'tex' | 'pdf'>('tex');
 
   // PDF Generation Logic
   const handlePdfRefresh = useCallback(async (
@@ -198,15 +199,43 @@ const App: React.FC = () => {
           />
         </div>
 
-        {/* Right Side: Preview */}
-        <div className="w-1/2 flex flex-col bg-slate-100">
-           <PdfPreview 
-                pdfUrl={pdfUrl} 
-                isLoading={isPdfLoading} 
-                error={renderError}
-                durationMs={pdfDuration}
-                onRefresh={() => handlePdfRefresh(documentState.tex, selectedFontFamily, selectedFontSize, documentState.assets, documentState.requiredFonts)}
-            />
+        {/* Right Side: Preview & Source */}
+        <div className="w-1/2 flex flex-col bg-slate-50 border-l border-slate-200">
+           {/* Tab Headers */}
+           <div className="flex border-b border-slate-200 bg-slate-100/50 px-2 h-10 items-end shrink-0">
+              <button 
+                onClick={() => setRightTab('tex')} 
+                className={`px-4 py-2 text-xs font-bold transition-all ${rightTab === 'tex' ? 'text-brand-600 border-b-2 border-brand-600 bg-white' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                TEX SOURCE
+              </button>
+              <button 
+                onClick={() => setRightTab('pdf')} 
+                className={`px-4 py-2 text-xs font-bold transition-all ${rightTab === 'pdf' ? 'text-brand-600 border-b-2 border-brand-600 bg-white' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                PDF PREVIEW
+              </button>
+           </div>
+
+           {/* Content Area */}
+           <div className="flex-1 relative overflow-hidden">
+             {rightTab === 'tex' ? (
+               <div className="absolute inset-0 p-6 bg-[#0F172A] overflow-auto">
+                 <div className="flex items-center justify-between mb-4 border-b border-slate-700 pb-2">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest italic">Generated LaTeX Code</span>
+                 </div>
+                 <pre className="text-emerald-400 font-mono text-sm whitespace-pre-wrap leading-relaxed select-all">{documentState.tex}</pre>
+               </div>
+             ) : (
+               <PdfPreview 
+                    pdfUrl={pdfUrl} 
+                    isLoading={isPdfLoading} 
+                    error={renderError}
+                    durationMs={pdfDuration}
+                    onRefresh={() => handlePdfRefresh(documentState.tex, selectedFontFamily, selectedFontSize, documentState.assets, documentState.requiredFonts)}
+                />
+             )}
+           </div>
         </div>
       </main>
     </div>
