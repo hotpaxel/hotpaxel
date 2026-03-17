@@ -97,12 +97,37 @@ const App: React.FC = () => {
     };
   }, [fonts, paxelEndpoint]);
 
-  // SDK Subscription
+  // SDK Subscription & Initial Recovery
   useEffect(() => {
+    // 1. Initial Recovery
+    const savedState = localStorage.getItem('hotpaxel_saved_state');
+    if (savedState) {
+        try {
+            const parsed = JSON.parse(savedState);
+            if (parsed.html) {
+                hotSdk.newDocument();
+                // Restore assets first
+                if (parsed.assets) {
+                    parsed.assets.forEach((a: Asset) => hotSdk.addAsset(a.name, a.content));
+                }
+                hotSdk.updateHtml(parsed.html);
+                console.log('[App] Restored state from localStorage');
+            }
+        } catch (e) {
+            console.error('[App] Failed to restore state:', e);
+            localStorage.removeItem('hotpaxel_saved_state'); // Clear corrupted state
+        }
+    }
+
     const unsubscribe = hotSdk.subscribe((status, state, error) => {
       setSdkStatus(status);
       setDocumentState({ ...state });
       setErrorMessage(error);
+      
+      // Auto-save to localStorage
+      if (state.html || (state.assets && state.assets.length > 0)) {
+          localStorage.setItem('hotpaxel_saved_state', JSON.stringify(state));
+      }
       
       // Auto-trigger PDF refresh
       if (status === SdkStatus.SUCCESS || (status === SdkStatus.IDLE && state.tex)) {

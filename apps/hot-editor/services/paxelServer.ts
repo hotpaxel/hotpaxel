@@ -25,7 +25,7 @@ export const generatePdfPreview = async (
         console.log(`[PAXEL] Compiling at ${endpoint}...`);
 
         // 1. Base font config (Default)
-        let fontConfig = `\\usepackage{kotex}\n\\usepackage{graphicx}\n\\usepackage{fontspec}\n`;
+        let fontConfig = `\\usepackage{kotex}\n\\usepackage{graphicx}\n\\usepackage{fontspec}\n\\usepackage{parskip}\n`;
         const baseFont = fontFamily || 'NanumGothic';
         fontConfig += `\\setmainfont{${baseFont}}[AutoFakeSlant,AutoFakeBold]\n`;
         fontConfig += `\\setmainhangulfont{${baseFont}}[AutoFakeSlant,AutoFakeBold]\n`;
