@@ -2,10 +2,32 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum OverwriteStrategy {
+    Always,
+    Never,
+    #[default]
+    Ask,
+}
+
+impl std::fmt::Display for OverwriteStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            OverwriteStrategy::Always => "always",
+            OverwriteStrategy::Never => "never",
+            OverwriteStrategy::Ask => "ask",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(rename = "defaultHost")]
     pub default_host: Option<String>,
+    #[serde(default)]
+    pub overwrite: OverwriteStrategy,
 }
 
 impl Config {

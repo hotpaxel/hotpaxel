@@ -23,6 +23,8 @@ struct Cli {
 enum ConfigAction {
     /// Set a default host
     DefaultHost { url: String },
+    /// Set overwrite strategy (always, never, ask)
+    Overwrite { strategy: String },
 }
 
 #[derive(Subcommand)]
@@ -44,6 +46,9 @@ enum Commands {
         /// Input format (auto, html, tex)
         #[arg(long, default_value = "auto")]
         from: String,
+        /// Overwrite output file without asking
+        #[arg(short, long)]
+        yes: bool,
     },
     /// Convert document format (local conversion)
     Convert {
@@ -85,13 +90,60 @@ fn main() {
                 config.save().expect("Failed to save config");
                 println!("✔  Default host set to: {}", url);
             }
+            ConfigAction::Overwrite { strategy } => {
+                use hot::config::OverwriteStrategy;
+                let s = match strategy.to_lowercase().as_str() {
+                    "always" => OverwriteStrategy::Always,
+                    "never" => OverwriteStrategy::Never,
+                    "ask" => OverwriteStrategy::Ask,
+                    _ => {
+                        eprintln!("✗  Invalid strategy. Use: always, never, ask");
+                        process::exit(1);
+                    }
+                };
+                config.overwrite = s;
+                config.save().expect("Failed to save config");
+                println!("✔  Overwrite strategy set to: {}", s);
+            }
         },
         Commands::Compile {
             input,
             output,
             passes,
             from,
+            yes,
         } => {
+            let out_path = output.clone().unwrap_or_else(|| input.with_extension("pdf"));
+
+            // Check if output file exists
+            if out_path.exists() {
+                let should_overwrite = if yes {
+                    true
+                } else {
+                    use hot::config::OverwriteStrategy;
+                    match config.overwrite {
+                        OverwriteStrategy::Always => true,
+                        OverwriteStrategy::Never => {
+                            eprintln!("✗  Error: Output file '{}' already exists and overwrite strategy is 'never'.", out_path.display());
+                            process::exit(1);
+                        }
+                        OverwriteStrategy::Ask => {
+                            print!("⚠  File '{}' already exists. Overwrite? [y/N] ", out_path.display());
+                            use std::io::{self, Write};
+                            io::stdout().flush().unwrap();
+                            let mut input = String::new();
+                            io::stdin().read_line(&mut input).expect("Failed to read line");
+                            input.trim().to_lowercase() == "y"
+                        }
+                    }
+                };
+
+                if !should_overwrite {
+                    println!("ℹ  Abort.");
+                    process::exit(0);
+                }
+            }
+
             let mut tex = if from == "tex"
                 || (from == "auto" && input.extension().is_some_and(|e| e == "tex"))
             {
@@ -112,7 +164,6 @@ fn main() {
             println!("ℹ  Compiling {}...", input.display());
             match client.compile(tex, Some(passes), input.parent()) {
                 Ok(response) => {
-                    let out_path = output.unwrap_or_else(|| input.with_extension("pdf"));
                     let pdf_bytes = BASE64.decode(response.pdf).expect("Failed to decode PDF");
                     fs::write(&out_path, pdf_bytes).expect("Failed to write PDF");
                     println!(

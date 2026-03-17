@@ -68,7 +68,7 @@ impl PaxelClient {
 
         let resp = self
             .client
-            .post(format!("{}/compile", self.host))
+            .post(format!("{}/api/compile", self.host))
             .json(&request)
             .send()?;
 
@@ -84,7 +84,7 @@ impl PaxelClient {
     }
 
     pub fn list_fonts(&self) -> Result<Vec<FontInfo>, Box<dyn std::error::Error>> {
-        let resp = self.client.get(format!("{}/fonts", self.host)).send()?;
+        let resp = self.client.get(format!("{}/api/fonts", self.host)).send()?;
         let fonts = resp.json()?;
         Ok(fonts)
     }
