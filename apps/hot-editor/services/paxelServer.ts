@@ -3,76 +3,86 @@
  * Communicates with the PAXEL backend to render PDF from TeX source.
  */
 
-const PAXEL_URL = '/api';
+// const PAXEL_URL = 'http://localhost:8888/api'; // Removed global constant
 
-import { FontInfo } from '../types';
+import { FontInfo, Asset } from '../types';
 
-export const generatePdfPreview = async (texSource: string, fontFamily?: string, fontSize?: string): Promise<string> => {
+export const generatePdfPreview = async (
+    endpoint: string,
+    texSource: string, 
+    fontFamily?: string, 
+    fontSize?: string, 
+    assets: Asset[] = [],
+    requiredFonts: string[] = []
+): Promise<{ url: string, durationMs: number }> => {
     try {
-        console.log('[PAXEL] Compiling TeX with font:', fontFamily, 'size:', fontSize);
-
-        // Base font config: set document default font (used when no inline font is specified)
-        let fontConfig = '';
-        if (fontFamily) {
-            fontConfig = `\\usepackage{kotex}\n\\usepackage{fontspec}\n\\setmainfont{${fontFamily}}[AutoFakeSlant,AutoFakeBold]\n\\setmainhangulfont{${fontFamily}}[AutoFakeSlant,AutoFakeBold]`;
-        } else {
-            fontConfig = `\\usepackage{kotex}\n\\usepackage{fontspec}\n\\setmainfont{NanumGothic}[AutoFakeSlant,AutoFakeBold]\n\\setmainhangulfont{NanumGothic}[AutoFakeSlant,AutoFakeBold]`;
+        if (!endpoint || !endpoint.startsWith('http')) {
+            console.error('[PAXEL] INVALID ENDPOINT PASSED:', endpoint);
+            console.error('[PAXEL] TeX Source was:', texSource);
+            throw new Error(`Invalid Paxel endpoint: ${endpoint}. Please check your settings.`);
         }
+        
+        console.log(`[PAXEL] Compiling at ${endpoint}...`);
 
-        // No global font size injection - now handled inline per-text
-        // enumitem package for list styling
+        // 1. Base font config (Default)
+        let fontConfig = `\\usepackage{kotex}\n\\usepackage{graphicx}\n\\usepackage{fontspec}\n`;
+        const baseFont = fontFamily || 'NanumGothic';
+        fontConfig += `\\setmainfont{${baseFont}}[AutoFakeSlant,AutoFakeBold]\n`;
+        fontConfig += `\\setmainhangulfont{${baseFont}}[AutoFakeSlant,AutoFakeBold]\n`;
+
+        // 2. Dynamic Preamble for Inline Fonts
+        // We use \newfontfamily for each font used in the document to ensure they are loaded
+        const extraFonts = requiredFonts
+            .filter(f => f !== baseFont)
+            .map(f => `\\newfontfamily\\HOTFont${f.replace(/\s+/g, '')}{${f}}[AutoFakeSlant,AutoFakeBold]`)
+            .join('\n');
+
         const fullTex = `\\documentclass{article}
 ${fontConfig}
+${extraFonts}
 \\usepackage{enumitem}
 \\begin{document}
 ${texSource}
 \\end{document}`;
 
-        const response = await fetch(`${PAXEL_URL}/compile`, {
+        const response = await fetch(`${endpoint}/compile`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ tex: fullTex }),
+            body: JSON.stringify({ tex: fullTex, assets }),
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            let errorMessage = errorData.message || `PAXEL Error: ${response.status}`;
-            if (errorData.output) {
-                errorMessage += `\n\n--- Compiler Output ---\n${errorData.output}`;
-            }
-            throw new Error(errorMessage);
+            const errorText = await response.text();
+            throw new Error(`Server returned ${response.status}: ${errorText}`);
         }
 
-        // Response is JSON containing Base64 PDF
-        const responseData = await response.json();
-
-        if (!responseData.pdf) {
-            throw new Error('Server response did not contain a valid PDF data stream.');
-        }
-
-        // Convert Base64 directly to Blob using fetch (cleaner/faster than atob)
-        const base64Url = `data:application/pdf;base64,${responseData.pdf}`;
-        const pdfResponse = await fetch(base64Url);
-        const pdfBlob = await pdfResponse.blob();
-
-        const blobUrl = URL.createObjectURL(pdfBlob);
-
-        return blobUrl;
+        const data = await response.json();
+        
+        // Convert Base64 PDF to Blob URL
+        const pdfBlob = new Blob(
+            [Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0))],
+            { type: 'application/pdf' }
+        );
+        
+        return { 
+            url: URL.createObjectURL(pdfBlob), 
+            durationMs: data.totalTimeMs || data.compile_time_ms || 0 
+        };
     } catch (error: any) {
-        console.error('[PAXEL] Compilation failed:', error);
+        console.error('[PAXEL] Preview generation failed:', error);
         throw error;
     }
 };
 
-export const fetchFonts = async (): Promise<FontInfo[]> => {
+export const fetchFonts = async (endpoint: string): Promise<FontInfo[]> => {
     try {
-        const response = await fetch(`${PAXEL_URL}/fonts`);
+        const response = await fetch(`${endpoint}/fonts`);
         if (!response.ok) throw new Error('Failed to fetch fonts');
         return await response.json();
     } catch (error) {
-        console.error('[PAXEL] Failed to fetch fonts:', error);
+        console.error('[PAXEL] Font fetch failed:', error);
         return [];
     }
 };

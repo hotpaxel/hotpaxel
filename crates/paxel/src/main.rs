@@ -17,6 +17,7 @@ use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use tower::util::service_fn;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 
 #[derive(Parser, Debug)]
@@ -86,11 +87,17 @@ async fn main() {
         })
     };
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let mut app = Router::new()
         // API Routes
         .nest(
             "/api",
             Router::new()
+                .route("/", get(|| async { Json(json!({"status": "ok"})) }))
                 .route("/compile", post(compiler::compile_tex))
                 .route("/fonts", get(fonts::get_fonts))
                 .route("/fonts/:file_name", get(fonts::download_font))
@@ -104,7 +111,8 @@ async fn main() {
                         }))
                     }),
                 ),
-        );
+        )
+        .layer(cors);
 
     // API Documentation Serving
     if !args.disable_docs {

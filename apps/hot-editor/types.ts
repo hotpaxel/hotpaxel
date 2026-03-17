@@ -14,19 +14,31 @@ export interface HotTokenData {
   value: string;
 }
 
+export interface Asset {
+  name: string;
+  content: string; // Base64 encoded content
+}
+
 // Structure of the document state managed by HOT SDK
 export interface HotDocumentState {
   html: string;
   tex: string;
+  assets: Asset[];
+  requiredFonts: string[]; // List of unique font families used in the document
   lastUpdated: Date;
   version: number;
 }
 
-// Props for the internal Status Panel
 export interface StatusPanelProps {
   status: SdkStatus;
+  version: number;
   errorMessage?: string;
   lastSynced?: Date;
+  onNew: () => void;
+  onSave: () => void;
+  onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  paxelEndpoint: string;
+  onEndpointChange: (endpoint: string) => void;
 }
 
 export interface FontInfo {
@@ -39,5 +51,7 @@ export interface FontInfo {
 export interface PdfPreviewProps {
   pdfUrl: string | null;
   isLoading: boolean;
+  error: string | null;
+  durationMs?: number | null;
   onRefresh: () => void;
 }

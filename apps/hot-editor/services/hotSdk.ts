@@ -17,6 +17,8 @@ class HotSdkService {
   private state: HotDocumentState = {
     html: '<p>Welcome to <strong>HOTPaxel</strong>.</p><p>Start typing to generate TeX...</p>',
     tex: '\\textbf{Welcome to HOTPaxel}.',
+    assets: [],
+    requiredFonts: [],
     lastUpdated: new Date(),
     version: 1
   };
@@ -75,6 +77,27 @@ class HotSdkService {
     }, 600); // Simulate network/processing delay
   }
 
+  /**
+   * Add an asset (e.g. image) to the document
+   */
+  public addAsset(name: string, content: string) {
+    // Update assets in state
+    const existing = this.state.assets.findIndex(a => a.name === name);
+    if (existing >= 0) {
+      this.state.assets[existing] = { name, content };
+    } else {
+      this.state.assets.push({ name, content });
+    }
+
+    // Trigger re-render and re-verification
+    this.status = SdkStatus.SYNCING;
+    this.notify();
+
+    // Re-verify to ensure TeX is updated if needed
+    if (this.processingTimer) clearTimeout(this.processingTimer);
+    this.performRoundTripCheck(this.state.html);
+  }
+
   private async ensureInitialized() {
     if (this.initialized) return this.initialized;
     this.initialized = (async () => {
@@ -102,6 +125,8 @@ class HotSdkService {
       // Normalize HTML to check if it's truly empty (ignoring empty tags like <p></p>)
       const textOnly = html.replace(/<[^>]*>/g, '').trim();
 
+      const requiredFonts = new Set<string>();
+
       if (textOnly === '' && !html.includes('<img')) {
         // If no text and no images/assets, it's effectively empty
         finalTex = '';
@@ -120,18 +145,56 @@ class HotSdkService {
           }
 
           if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as Element;
+            const el = node as HTMLElement; // Use HTMLElement to access style
             let content = '';
 
             for (const child of Array.from(el.childNodes)) {
               content += processNode(child);
             }
 
+            // --- FONT & SIZE START ---
+            let fontPrefix = '';
+            let fontSuffix = '';
+            
+            const style = el.style;
+            if (style.fontFamily) {
+                const family = style.fontFamily.replace(/['"]/g, '');
+                requiredFonts.add(family);
+                // We use a naming convention: \F{FontName}{content}
+                // The actual definition of \F will be handled in preamble
+                fontPrefix += `\\fontfamily{${family}}\\selectfont `;
+            }
+            if (style.fontSize) {
+                const size = style.fontSize;
+                // Basic mapping for common sizes, or use \fontsize
+                if (size.endsWith('pt')) {
+                    const pt = parseFloat(size);
+                    fontPrefix += `\\fontsize{${pt}}{${pt * 1.2}}\\selectfont `;
+                }
+            }
+
+            if (fontPrefix) {
+                content = `{${fontPrefix}${content}}`;
+            }
+            // --- FONT & SIZE END ---
+
             if (el.tagName === 'P' || el.tagName === 'DIV') {
               return content + '\n\n';
             }
             if (el.tagName === 'BR') {
               return ' \\\\ \n';
+            }
+            if (el.tagName === 'STRONG' || el.tagName === 'B') {
+                return `\\textbf{${content}}`;
+            }
+            if (el.tagName === 'EM' || el.tagName === 'I') {
+                return `\\textit{${content}}`;
+            }
+            if (el.tagName === 'IMG') {
+              const src = el.getAttribute('src') || '';
+              // If it's a local filename, we've already matched it in assets
+              const fileName = el.getAttribute('data-filename') || src.split('/').pop() || 'image';
+              return `\\includegraphics[width=\\linewidth]{${fileName}}\n\n`;
             }
             return content;
           }
@@ -144,6 +207,7 @@ class HotSdkService {
       }
 
       this.state.tex = finalTex;
+      this.state.requiredFonts = Array.from(requiredFonts);
       this.state.version += 1;
       this.state.lastUpdated = new Date();
       this.status = SdkStatus.SUCCESS;
@@ -162,6 +226,8 @@ class HotSdkService {
     this.state = {
       html: '',
       tex: '',
+      assets: [],
+      requiredFonts: [],
       lastUpdated: new Date(),
       version: 1
     };
