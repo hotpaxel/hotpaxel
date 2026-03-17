@@ -179,14 +179,15 @@ class HotSdkService {
             // --- FONT & SIZE END ---
 
             if (el.tagName === 'P' || el.tagName === 'DIV') {
-              // If the paragraph is empty or only contains a BR, treat as a vertical space
-              if (content.trim() === '' || content === ' \\\\ \n') {
-                return '\\medskip\n\n';
+              // If the paragraph is empty or only contains a BR, treat as a visual blank line
+              // '~\\' means a line with an invisible character + newline
+              if (content.trim() === '' || content === ' \\\\~\\\\ \n') {
+                return '~\\\\ \n\n';
               }
               return content + '\n\n';
             }
             if (el.tagName === 'BR') {
-              return ' \\\\~\\\\ \n'; // Added forced space to avoid "no line here to end" error
+              return ' ~\\\\ \n'; 
             }
             if (el.tagName === 'STRONG' || el.tagName === 'B') {
                 return `\\textbf{${content}}`;
