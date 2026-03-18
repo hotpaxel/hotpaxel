@@ -36,9 +36,11 @@ enum Commands {
     },
     /// Compile TeX to PDF (requires PAXEL server)
     Compile {
-        /// Input .tex (or .html) file
-        input: PathBuf,
-        /// Output .pdf file
+        /// Input .tex (or .html) files
+        #[arg(required = true)]
+        inputs: Vec<PathBuf>,
+        /// Output .pdf file or directory (if multiple inputs)
+        #[arg(short, long)]
         output: Option<PathBuf>,
         /// Number of xelatex passes
         #[arg(long, default_value = "2")]
@@ -107,75 +109,110 @@ fn main() {
             }
         },
         Commands::Compile {
-            input,
+            inputs,
             output,
             passes,
             from,
             yes,
         } => {
-            let out_path = output.clone().unwrap_or_else(|| input.with_extension("pdf"));
-
-            // Check if output file exists
-            if out_path.exists() {
-                let should_overwrite = if yes {
-                    true
-                } else {
-                    use hot::config::OverwriteStrategy;
-                    match config.overwrite {
-                        OverwriteStrategy::Always => true,
-                        OverwriteStrategy::Never => {
-                            eprintln!("✗  Error: Output file '{}' already exists and overwrite strategy is 'never'.", out_path.display());
-                            process::exit(1);
-                        }
-                        OverwriteStrategy::Ask => {
-                            print!("⚠  File '{}' already exists. Overwrite? [y/N] ", out_path.display());
-                            use std::io::{self, Write};
-                            io::stdout().flush().unwrap();
-                            let mut input = String::new();
-                            io::stdin().read_line(&mut input).expect("Failed to read line");
-                            input.trim().to_lowercase() == "y"
-                        }
+            // Validate output if multiple inputs
+            if inputs.len() > 1 {
+                if let Some(ref out) = output {
+                    if out.exists() && !out.is_dir() {
+                        eprintln!("✗  Error: Output path '{}' exists and is not a directory, but multiple inputs were provided.", out.display());
+                        process::exit(1);
                     }
+                }
+            }
+
+            for input in &inputs {
+                let out_path = if let Some(ref out) = output {
+                    if out.is_dir() {
+                        out.join(input.with_extension("pdf").file_name().unwrap())
+                    } else if inputs.len() == 1 {
+                        out.clone()
+                    } else {
+                        input.with_extension("pdf")
+                    }
+                } else {
+                    input.with_extension("pdf")
                 };
 
-                if !should_overwrite {
-                    println!("ℹ  Abort.");
-                    process::exit(0);
+                // Create parent directories if they don't exist
+                if let Some(parent) = out_path.parent() {
+                    if !parent.exists() {
+                        fs::create_dir_all(parent).expect("Failed to create output directory");
+                    }
                 }
-            }
 
-            let mut tex = if from == "tex"
-                || (from == "auto" && input.extension().is_some_and(|e| e == "tex"))
-            {
-                fs::read_to_string(&input).expect("Failed to read input file")
-            } else {
-                // Convert to TeX first using plugins
-                self::convert_to_tex(&input, &from)
-            };
+                // Check if output file exists
+                if out_path.exists() {
+                    let should_overwrite = if yes {
+                        true
+                    } else {
+                        use hot::config::OverwriteStrategy;
+                        match config.overwrite {
+                            OverwriteStrategy::Always => true,
+                            OverwriteStrategy::Never => {
+                                eprintln!("✗  Skipping '{}': File already exists (strategy: never).", out_path.display());
+                                continue;
+                            }
+                            OverwriteStrategy::Ask => {
+                                print!("⚠  File '{}' already exists. Overwrite? [y/N] ", out_path.display());
+                                use std::io::{self, Write};
+                                io::stdout().flush().unwrap();
+                                let mut input = String::new();
+                                io::stdin().read_line(&mut input).expect("Failed to read line");
+                                if input.trim().to_lowercase() != "y" {
+                                    println!("ℹ  Skipping '{}'.", out_path.display());
+                                    continue;
+                                }
+                                true
+                            }
+                        }
+                    };
 
-            // If it doesn't look like a full document, wrap it
-            if !tex.contains("\\documentclass") {
-                tex = format!(
-                    "\\documentclass{{article}}\n\\usepackage{{kotex}}\n\\usepackage{{fontspec}}\n\\usepackage{{enumitem}}\n\\usepackage{{graphicx}}\n\\usepackage{{ulem}}\n\\begin{{document}}\n{}\n\\end{{document}}",
-                    tex
-                );
-            }
+                    if !should_overwrite {
+                        continue;
+                    }
+                }
 
-            println!("ℹ  Compiling {}...", input.display());
-            match client.compile(tex, Some(passes), input.parent()) {
-                Ok(response) => {
-                    let pdf_bytes = BASE64.decode(response.pdf).expect("Failed to decode PDF");
-                    fs::write(&out_path, pdf_bytes).expect("Failed to write PDF");
-                    println!(
-                        "✔  Successfully compiled → {} (compile: {}ms, total: {}ms)",
-                        out_path.display(),
-                        response.compile_time_ms,
-                        response.total_time_ms
+                let mut tex = if from == "tex"
+                    || (from == "auto" && input.extension().is_some_and(|e| e == "tex"))
+                {
+                    match fs::read_to_string(&input) {
+                        Ok(t) => t,
+                        Err(_) => {
+                            eprintln!("✗  Error: Failed to read input file '{}'", input.display());
+                            continue;
+                        }
+                    }
+                } else {
+                    self::convert_to_tex(&input, &from)
+                };
+
+                if !tex.contains("\\documentclass") {
+                    tex = format!(
+                        "\\documentclass{{article}}\n\\usepackage{{kotex}}\n\\usepackage{{fontspec}}\n\\usepackage{{enumitem}}\n\\usepackage{{graphicx}}\n\\usepackage{{ulem}}\n\\begin{{document}}\n{}\n\\end{{document}}",
+                        tex
                     );
                 }
-                Err(e) => {
-                    eprintln!("✗  Compilation failed: {}", e);
-                    process::exit(1);
+
+                println!("ℹ  Compiling {}...", input.display());
+                match client.compile(tex, Some(passes), input.parent()) {
+                    Ok(response) => {
+                        let pdf_bytes = BASE64.decode(response.pdf).expect("Failed to decode PDF");
+                        fs::write(&out_path, pdf_bytes).expect("Failed to write PDF");
+                        println!(
+                            "✔  Successfully compiled → {} (compile: {}ms, total: {}ms)",
+                            out_path.display(),
+                            response.compile_time_ms,
+                            response.total_time_ms
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("✗  Compilation failed for '{}': {}", input.display(), e);
+                    }
                 }
             }
         }
