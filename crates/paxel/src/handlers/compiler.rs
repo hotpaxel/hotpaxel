@@ -36,7 +36,9 @@ pub struct InternalCompileResult {
     pub compile_time_ms: u64,
 }
 
-pub async fn execute_compilation(payload: CompileRequest) -> Result<InternalCompileResult, CompilationError> {
+pub async fn execute_compilation(
+    payload: CompileRequest,
+) -> Result<InternalCompileResult, CompilationError> {
     let _id = Uuid::new_v4().to_string();
     let dir = match tempdir() {
         Ok(d) => d,
