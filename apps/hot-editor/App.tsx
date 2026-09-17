@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import EditorComponent from './components/Editor';
 import PdfPreview from './components/PdfPreview';
 import StatusPanel from './components/StatusPanel';
+import { AuthModal } from './components/AuthModal';
 import { hotSdk } from './services/hotSdk';
 import { generatePdfPreview, fetchFonts } from './services/paxelServer';
 import { SdkStatus, HotDocumentState, FontInfo, Asset } from './types';
@@ -15,11 +16,23 @@ const App: React.FC = () => {
   
   // 2. Settings (Paxel Endpoint)
   const [paxelEndpoint, setPaxelEndpoint] = useState(() => {
-    // Force a valid default if localStorage is empty or looks like garbage (e.g. contains TeX)
     const saved = localStorage.getItem('hotpaxel_endpoint');
+    if (typeof window !== 'undefined' && window.location.origin) {
+      const isCurrentLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      // If deployed on remote host, don't fall back to stale localhost stored in localStorage
+      if (!isCurrentLocalhost && saved && saved.includes('localhost')) {
+        return `${window.location.origin}/api`;
+      }
+      if (saved && saved.startsWith('http')) return saved;
+      return `${window.location.origin}/api`;
+    }
     if (saved && saved.startsWith('http')) return saved;
     return 'http://localhost:8888/api';
   });
+
+  // 2.1 Auth State
+  const [authRequired, setAuthRequired] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
   // 3. User Preferences & Assets
   const [fonts, setFonts] = useState<FontInfo[]>([]);
@@ -62,9 +75,64 @@ const App: React.FC = () => {
     }
   }, [paxelEndpoint]);
 
-  // Load fonts and save endpoint
+  // Check Auth Status & parse ?token=... from URL
+  const checkAuthStatus = useCallback(async (endpoint: string) => {
+    try {
+      // 1. Check URL for ?token=...
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+          const verifyRes = await fetch(`${endpoint}/auth/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: urlToken }),
+          });
+          if (verifyRes.ok) {
+            urlParams.delete('token');
+            const newSearch = urlParams.toString();
+            const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+            window.history.replaceState(null, '', newUrl);
+
+            setAuthRequired(true);
+            setIsAuthenticated(true);
+            return;
+          }
+        }
+      }
+
+      // 2. Query /api/auth/status
+      const res = await fetch(`${endpoint}/auth/status`);
+      if (res.ok) {
+        const data = await res.json();
+        setAuthRequired(!!data.auth_required);
+        setIsAuthenticated(!!data.authenticated);
+      }
+    } catch (e) {
+      console.warn('[AUTH] Check failed:', e);
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch(`${paxelEndpoint}/auth/logout`, { method: 'POST' });
+    } catch (e) {
+      console.error('[AUTH] Logout failed:', e);
+    } finally {
+      setIsAuthenticated(false);
+    }
+  }, [paxelEndpoint]);
+
+  // Initial Auth Check
   useEffect(() => {
     if (paxelEndpoint.startsWith('http')) {
+      checkAuthStatus(paxelEndpoint);
+    }
+  }, [paxelEndpoint, checkAuthStatus]);
+
+  // Load fonts and save endpoint
+  useEffect(() => {
+    if (paxelEndpoint.startsWith('http') && isAuthenticated) {
         localStorage.setItem('hotpaxel_endpoint', paxelEndpoint);
         fetchFonts(paxelEndpoint).then(fetched => {
             if (fetched && fetched.length > 0) {
@@ -77,7 +145,7 @@ const App: React.FC = () => {
             }
         });
     }
-  }, [paxelEndpoint]);
+  }, [paxelEndpoint, isAuthenticated]);
 
   // Inject Font Faces
   useEffect(() => {
@@ -187,6 +255,20 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white text-slate-900 font-sans">
+      {/* 0. Auth Modal if locked */}
+      {authRequired && !isAuthenticated && (
+        <AuthModal
+          endpoint={paxelEndpoint}
+          onAuthenticated={() => {
+            setIsAuthenticated(true);
+            // Refresh fonts once authenticated
+            fetchFonts(paxelEndpoint).then(fetched => {
+              if (fetched && fetched.length > 0) setFonts(fetched);
+            });
+          }}
+        />
+      )}
+
       {/* 1. Header */}
       <StatusPanel 
         status={sdkStatus} 
@@ -197,6 +279,8 @@ const App: React.FC = () => {
         onLoad={handleLoad}
         paxelEndpoint={paxelEndpoint}
         onEndpointChange={setPaxelEndpoint}
+        authRequired={authRequired}
+        onLogout={handleLogout}
       />
 
       {/* 2. Error Banner */}

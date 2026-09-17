@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SdkStatus, StatusPanelProps } from '../types';
-import { CheckCircle2, AlertTriangle, Loader2, FilePlus, Save, FolderOpen, Settings, Check, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Loader2, FilePlus, Save, FolderOpen, Settings, Check, X, LogOut } from 'lucide-react';
 
 const StatusPanel: React.FC<StatusPanelProps> = ({ 
   status, 
@@ -10,7 +10,9 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
   onSave, 
   onLoad, 
   paxelEndpoint, 
-  onEndpointChange 
+  onEndpointChange,
+  authRequired,
+  onLogout
 }) => {
   const [isEditingEndpoint, setIsEditingEndpoint] = useState(false);
   const [tempEndpoint, setTempEndpoint] = useState(paxelEndpoint);
@@ -128,6 +130,17 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
            </div>
         </div>
         
+        {authRequired && onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 text-slate-400 hover:text-brand-600 transition-colors py-1 px-2 hover:bg-brand-50 rounded text-xs"
+            title="Lock Workspace (Logout)"
+          >
+            <LogOut size={13} />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-brand-600 hidden sm:inline">Lock</span>
+          </button>
+        )}
+
         {errorMessage && (
             <div className="group relative">
                 <AlertTriangle size={14} className="text-red-400 animate-bounce" />
