@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | HOTPaxel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&family=IBM+Plex+Serif:wght@400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --hot-red: #D90429;
+            /* Precise brand red from the image */
+            --paxel-black: #1A1A1A;
+            --bg: #F4F4F4;
+            /* Slight off-white background matching the image */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--paxel-black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        /* Pure CSS Brand Logo matching the provided image */
+        .brand-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 0.9;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo-hot {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 5.5rem;
+            font-weight: 500;
+            color: var(--hot-red);
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .logo-paxel {
+            font-family: 'IBM Plex Serif', serif;
+            /* Serif font matching the image's "Paxel" */
+            font-size: 6.5rem;
+            font-weight: 400;
+            color: var(--paxel-black);
+            margin-top: -0.8rem;
+            line-height: 1;
+        }
+
+        .error-code {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            color: var(--hot-red);
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 3.5rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background-color: var(--hot-red);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(227, 6, 19, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+            box-shadow: 0 10px 30px rgba(227, 6, 19, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Brand Logo implemented in CSS -->
+        <div class="brand-logo">
+            <div class="logo-hot">HOT</div>
+            <div class="logo-paxel">Paxel</div>
+        </div>
+
+        <div class="error-code">404 ERROR</div>
+        <h2>Oops! Page Not Found</h2>
+        <p>The page you are looking for might have been removed,<br>had its name changed, or is temporarily unavailable.
+        </p>
+        <a href="/" class="btn">Home</a>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+option go_package = "hotpaxel/v1";
+
+message Asset {
+  string name = 1;
+  bytes content = 2;
+  optional string mime_type = 3;
+  optional string checksum = 4;
+  map<string, string> metadata = 5;
+}

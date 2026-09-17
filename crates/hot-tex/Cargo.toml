@@ -1,0 +1,7 @@
+[package]
+name = "hot-tex"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hot-core = { path = "../hot-core" }

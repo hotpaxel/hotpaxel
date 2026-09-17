@@ -1,12 +1,14 @@
-# 📘 HOTPAXEL Engineering Architecture Guide
+# 📘 HOTPaxel Engineering Architecture Guide
 
 **(Team Understanding Document)**
 
+**[Back to README](../README.md)** | **[Architecture Spec](./architecture.md)** | **[API Reference](./api.md)** | **[UI/SDK Contract](./ui_contract.md)**
+
 ---
 
-## 1. Why HOTPAXEL?
+## 1. Why HOTPaxel?
 
-HOTPAXEL is not just a "document editor".
+HOTPaxel is not just a "document editor".
 It must satisfy **contradictory requirements**:
 
 1. **Legal/Contract documents must be strict like TeX**
@@ -14,7 +16,8 @@ It must satisfy **contradictory requirements**:
 3. **Data loss is unacceptable** (server failure/network issues)
 4. PDF generation is a heavy and risky operation (security/resource)
 
-👉 To resolve this, HOTPAXEL **physically separates editing and rendering**.
+👉 Decision: Product name is **HOTPaxel**.
+👉 To resolve this, HOTPaxel **physically separates editing and rendering**.
 
 ---
 
@@ -137,3 +140,25 @@ Tiptex Web is:
 * Not where the document is "made"
 
 Therefore, UI is **part of the architecture**, and cannot be arbitrary.
+
+---
+
+## 8. Development History & Milestones
+
+### 🚀 Phase 1-3: Core Foundation [COMPLETED]
+- Replaced Pandoc/Node.js with **Rust/WASM** for extreme performance and type-safety.
+- Established the **PAXEL** rendering server with strict timeout and security controls.
+
+### 🎨 Phase 4: HotPaxel Editor [COMPLETED]
+- Integrated the React/Tiptap editor with the HOT WASM SDK.
+- Implemented **Logic Chip Protection** for non-destructive contract editing.
+
+### 📦 Phase 6: Single Binary Integration [COMPLETED]
+- Consolidated the entire stack into a single Rust binary.
+- Removed Nginx to simplify infrastructure and Docker deployment.
+
+### 🏆 Milestone Achievements
+- [x] **Gate A**: HOT exports stable compilable TeX offline.
+- [x] **Gate B**: PAXEL compiles safely under constraints.
+- [x] **Gate C**: Full E2E integration passes contract tests.
+- [x] **Gate D**: Single binary deployment validated.

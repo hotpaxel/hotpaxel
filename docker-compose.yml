@@ -1,33 +1,19 @@
-version: '3.8'
-
 services:
-  # Tiptex Web (Frontend + Nginx)
-  tiptex-web:
-    # Build locally or on server
-    # build:
-    #   context: .
-    #   dockerfile: apps/tiptex-web/Dockerfile
-    image: ghcr.io/${GH_USER:-hotpaxel}/tiptex-web:${TAG:-latest}
+  hotpaxel:
+    image: hotpaxel/hotpaxel:0.2.1-alpha.2
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8888:80"
-    depends_on:
-      - paxel
-
-  # Phase 3 implementation
-  paxel:
-    # build:
-    #   context: .
-    #   dockerfile: crates/paxel/Dockerfile
-    image: ghcr.io/${GH_USER:-hotpaxel}/paxel:${TAG:-latest}
-    # Remove public port 8888 exposure, accessed via nginx internally
-    expose:
-      - "8888"
+      - "8888:8888" # Unified Port (API + UI)
     environment:
       - PORT=8888
-      - ENABLE_ASSETS=true
-      - JOB_TIMEOUT_MS=300000
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
+      - STATIC_DIR=./public
+      - DOCS_DIR=./docs
+      - DISABLE_UI=false
+    volumes:
+      - ./apps/hot-editor/dist:/app/public:ro
+      - ./apps/docs:/app/docs:ro
+      # Uncomment if you have local binary and want to skip re-build cycles
+      # - ./target/release/paxel:/app/paxel:ro
+    restart: always

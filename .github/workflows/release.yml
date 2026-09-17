@@ -15,8 +15,8 @@ env:
   VERSION: ${{ github.ref_name }} # e.g. v0.2.0-alpha.3
 
 jobs:
-  build-frontend:
-    name: Build Frontend
+  build-wasm:
+    name: Build WASM SDK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -44,6 +44,26 @@ jobs:
         run: wasm-pack build --target web --release --scope hotpaxel
         working-directory: crates/hot
 
+      - name: Upload @hotpaxel/hot package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: hot
+          path: crates/hot/pkg/
+
+  build-editor:
+    name: Build Editor UI
+    needs: build-wasm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download @hotpaxel/hot package
+        uses: actions/download-artifact@v6
+        with:
+          name: hot
+          path: crates/hot/pkg
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -52,21 +72,15 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build tiptex-web
+      - name: Build hot-editor
         run: bun run build
-        working-directory: apps/tiptex-web
+        working-directory: apps/hot-editor
 
-      - name: Upload @hotpaxel/tiptex-web artifact
+      - name: Upload @hotpaxel/hot-editor artifact
         uses: actions/upload-artifact@v6
         with:
-          name: tiptex-web
-          path: apps/tiptex-web/dist/
-
-      - name: Upload @hotpaxel/hot package artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: hot
-          path: crates/hot/pkg/
+          name: hot-editor
+          path: apps/hot-editor/dist/
 
   build-backend:
     name: Build Backend (${{ matrix.arch }})
@@ -117,7 +131,7 @@ jobs:
 
   npm-publish:
     name: NPM Publish
-    needs: build-frontend
+    needs: build-wasm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -137,13 +151,23 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Determine NPM Tag
+        id: npm-tag
+        run: |
+          if [[ "${{ env.VERSION }}" == *"alpha"* ]]; then
+            echo "tag=alpha" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ env.VERSION }}" == *"beta"* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to NPM (@hotpaxel/hot)
-        run: npm publish --access public --tag alpha
+        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
         working-directory: crates/hot/pkg
 
-  docker-publish-hotpaxel:
+  docker-publish:
     name: Docker Publish (Hotpaxel - Unified)
-    needs: [build-frontend, build-backend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -152,24 +176,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Download @hotpaxel/tiptex-web artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: tiptex-web
-          path: dist
-
-      - name: Download amd64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-amd64
-          path: artifacts/amd64
-
-      - name: Download arm64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-arm64
-          path: artifacts/arm64
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -183,117 +189,32 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/hotpaxel
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta') }}
 
       - name: Build and push Hotpaxel (Unified)
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: .docker/hotpaxel.Dockerfile
+          file: Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/hotpaxel:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  docker-publish-paxel:
-    name: Docker Publish (Paxel - Backend)
-    needs: [build-backend]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download amd64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-amd64
-          path: artifacts/amd64
-
-      - name: Download arm64 backend artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: paxel-arm64
-          path: artifacts/arm64
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Paxel (Backend)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/paxel.Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/paxel:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  docker-publish-tiptex-web:
-    name: Docker Publish (TipTeX Web - Frontend)
-    needs: [build-frontend]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download @hotpaxel/tiptex-web artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: tiptex-web
-          path: dist
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push TipTeX Web (Frontend)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: .docker/tiptex-web.Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/tiptex-web:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   github-release:
     name: Create GitHub Release
-    needs: [build-frontend, build-backend, npm-publish, docker-publish-hotpaxel, docker-publish-paxel, docker-publish-tiptex-web]
+    needs: [build-wasm, build-editor, build-backend, npm-publish, docker-publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -313,18 +234,18 @@ jobs:
           name: paxel-arm64
           path: release-artifacts/paxel-arm64
 
-      - name: Download tiptex-web
+      - name: Download hot-editor
         uses: actions/download-artifact@v6
         with:
-          name: tiptex-web
-          path: release-artifacts/tiptex-web
+          name: hot-editor
+          path: release-artifacts/hot-editor
 
       - name: Prepare release artifacts (ZIP)
         run: |
           # Use internal filenames as original 'paxel', but zip with descriptive names
           cd release-artifacts/paxel-amd64 && zip ../../paxel-linux-amd64-${{ github.ref_name }}.zip paxel && cd ../..
           cd release-artifacts/paxel-arm64 && zip ../../paxel-linux-arm64-${{ github.ref_name }}.zip paxel && cd ../..
-          cd release-artifacts/tiptex-web && zip -r ../../tiptex-web-${{ github.ref_name }}.zip ./* && cd ../..
+          cd release-artifacts/hot-editor && zip -r ../../hot-editor-${{ github.ref_name }}.zip ./* && cd ../..
 
       - name: Generate release notes
         id: generate_notes
@@ -348,10 +269,9 @@ jobs:
           Full-stack solution with Backend and Frontend integrated in a single container.
           - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           
-          ### 🏗️ Server + UI (Distributed)
-          Separate components for flexible and scalable architecture.
-          - 💻 **Backend (Docker):** [ghcr.io/${{ github.repository_owner }}/paxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/paxel)
-          - 🌐 **Frontend (Docker):** [ghcr.io/${{ github.repository_owner }}/tiptex-web:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/tiptex-web)
+          ### 🏗️ Standalone API (Server Only)
+          Disable UI using `DISABLE_UI=true` environment variable or `--disable-ui` flag.
+          - 🐳 **Docker Image:** [ghcr.io/${{ github.repository_owner }}/hotpaxel:${{ github.ref_name }}](https://github.com/${{ github.repository }}/pkgs/container/hotpaxel)
           - 💾 **Binaries:** See the **Assets** section below for platform-specific ZIP files.
           
           ### 📚 Library & SDK
@@ -375,7 +295,6 @@ jobs:
           files: |
             paxel-linux-amd64-${{ github.ref_name }}.zip
             paxel-linux-arm64-${{ github.ref_name }}.zip
-            tiptex-web-${{ github.ref_name }}.zip
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')

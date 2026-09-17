@@ -1,15 +1,19 @@
 # --- Stage 1: Build Rust Backend & WASM ---
 FROM rust:1.88-slim-bookworm AS rust-builder
 
-RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev protobuf-compiler && rm -rf /var/lib/apt/lists/*
 RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 WORKDIR /app
 COPY . .
 
-# Build PAXEL (Binary)
-WORKDIR /app/crates/paxel
-RUN cargo build --release
+# Build Workspace-wide but target paxel
+RUN uname -m && rustc -vV
+RUN cargo build --release -p paxel
+
+# Verify the binary in builder stage
+RUN ls -l /app/target/release/paxel && \
+    head -c 4 /app/target/release/paxel | od -A n -t x1 | grep -q "7f 45 4c 46" || (echo "❌ Invalid ELF binary" && exit 1)
 
 # Build HOT (WASM)
 WORKDIR /app/crates/hot
@@ -18,45 +22,46 @@ RUN wasm-pack build --target web --release --scope hotpaxel
 # --- Stage 2: Build Frontend ---
 FROM oven/bun:1-debian AS fe-builder
 WORKDIR /app
-COPY package.json turbo.json bun.lock ./
-COPY apps/tiptex-web/package.json ./apps/tiptex-web/
-COPY crates/hot ./crates/hot
-COPY crates/paxel/package.json ./crates/paxel/
+COPY . .
 # Copy the built WASM package from stage 1
 COPY --from=rust-builder /app/crates/hot/pkg /app/crates/hot/pkg
 
 RUN bun install
-COPY apps/tiptex-web ./apps/tiptex-web
-WORKDIR /app/apps/tiptex-web
+WORKDIR /app/apps/hot-editor
 RUN bun run build
 
-# --- Stage 3: Final Runner (Unified) ---
+# --- Stage 3: Build API Documentation ---
+FROM fe-builder AS docs-builder
+WORKDIR /app
+# Install jq for title injection
+USER root
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+# Generate docs using bun script (which calls buf)
+RUN bun run gen:docs
+
+# --- Stage 4: Final Runner (Single Binary) ---
 FROM makye/texlive-node:latest-24.13.0-ko
 
 WORKDIR /app
 
-# Install Nginx
+# Install dependencies (only basic ones if needed)
 USER root
-RUN apt-get update && apt-get install -y nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r paxel && useradd -r -g paxel -m paxel
 
 # Copy backend binary
 COPY --from=rust-builder /app/target/release/paxel ./paxel
 
-# Copy frontend assets
-COPY --from=fe-builder /app/apps/tiptex-web/dist /var/www/html
+# Copy frontend assets to ./public
+COPY --from=fe-builder /app/apps/hot-editor/dist ./public
 
-# Copy Nginx config template
-COPY apps/tiptex-web/nginx.conf /etc/nginx/sites-available/default.template
-
-# Startup script
-RUN echo '#!/bin/sh\n\
-    export PAXEL_HOST=localhost\n\
-    envsubst "\$PAXEL_HOST" < /etc/nginx/sites-available/default.template > /etc/nginx/sites-enabled/default\n\
-    nginx -g "daemon off;" & \n\
-    ./paxel' > /app/start.sh && chmod +x /app/start.sh
+# Copy API documentation to ./docs
+COPY --from=docs-builder /app/apps/docs ./docs
 
 ENV PORT=8888
-EXPOSE 80 8888
+ENV STATIC_DIR=./public
+ENV DOCS_DIR=./docs
+EXPOSE 8888
 
-CMD ["/app/start.sh"]
+# Run the single binary
+CMD ["./paxel", "--port", "8888", "--static-dir", "./public", "--docs-dir", "./docs"]

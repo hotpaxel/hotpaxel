@@ -7,6 +7,7 @@ dist
 .turbo
 target/
 pkg/
+gen/
 
 # Environment & Config
 .env
@@ -15,3 +16,7 @@ pkg/
 logs
 *.log
 *-debug.log*
+
+# Generated Documentation
+apps/docs/
+crates/paxel/public/

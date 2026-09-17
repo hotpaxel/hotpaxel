@@ -3,7 +3,7 @@
 ## D-0001: Product name
 - Date: 2026-01-31
 - Status: Finalized
-- Decision: Product name is **HOTPAXEL**.
+- Decision: Product name is **HOTPaxel**.
 
 ## D-0002: NPM scope
 - Date: 2026-01-31

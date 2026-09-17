@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package hotpaxel.v1;
+option go_package = "hotpaxel/v1";
+
+import "hotpaxel/v1/types/font.proto";
+import "hotpaxel/v1/types/system.proto"; // for HealthCheckRequest if needed, but usually domain specific
+
+service FontService {
+  rpc GetFonts(HealthCheckRequest) returns (FontListResponse);
+  rpc DownloadFont(DownloadFontRequest) returns (stream FontChunk);
+  rpc ValidateFont(ValidateFontRequest) returns (ValidateFontResponse);
+}
