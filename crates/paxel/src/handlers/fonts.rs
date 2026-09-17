@@ -106,7 +106,7 @@ fn init_fonts() -> &'static FontCache {
             }
         }
 
-        list.sort_by(|a, b| a.family.to_lowercase().cmp(&b.family.to_lowercase()));
+        list.sort_by_key(|a| a.family.to_lowercase());
 
         FontCache { list, paths }
     })
