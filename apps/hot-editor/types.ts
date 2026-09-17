@@ -39,6 +39,8 @@ export interface StatusPanelProps {
   onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void;
   paxelEndpoint: string;
   onEndpointChange: (endpoint: string) => void;
+  authRequired?: boolean;
+  onLogout?: () => void;
 }
 
 export interface FontInfo {

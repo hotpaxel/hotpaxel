@@ -1,5 +1,6 @@
 #![allow(clippy::result_large_err)]
 
+mod auth;
 mod handlers;
 mod models;
 mod proto;
@@ -18,6 +19,7 @@ use http_body_util::BodyExt;
 use serde_json::json;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tower::util::service_fn;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
@@ -44,12 +46,30 @@ struct Args {
     /// Disable API documentation serving
     #[arg(long, env = "DISABLE_DOCS", default_value_t = false)]
     disable_docs: bool,
+
+    /// Optional access token to protect API and compilation services
+    #[arg(long, env = "HOTPAXEL_AUTH_TOKEN")]
+    auth_token: Option<String>,
 }
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
+
+    let auth_token = args
+        .auth_token
+        .or_else(|| std::env::var("HOTPAXEL_TOKEN").ok())
+        .or_else(|| std::env::var("AUTH_TOKEN").ok());
+
+    let authenticator: auth::SharedAuthenticator =
+        Arc::new(auth::TokenAuthenticator::new(auth_token));
+
+    if authenticator.is_enabled() {
+        tracing::info!("Authentication is ENABLED (token-based protection active)");
+    } else {
+        tracing::info!("Authentication is DISABLED (open access mode)");
+    }
 
     let static_path = PathBuf::from(&args.static_dir);
     let not_found_path = static_path.join("404.html");
@@ -97,6 +117,7 @@ async fn main() {
         .allow_headers(Any);
 
     let mut app = Router::new()
+        .route("/health", get(|| async { "ok" }))
         // API Routes
         .nest(
             "/api",
@@ -114,6 +135,14 @@ async fn main() {
                             "name": env!("CARGO_PKG_NAME")
                         }))
                     }),
+                )
+                .nest(
+                    "/auth",
+                    Router::new()
+                        .route("/status", get(auth::auth_status))
+                        .route("/verify", post(auth::verify_token))
+                        .route("/logout", post(auth::logout))
+                        .with_state(authenticator.clone()),
                 ),
         )
         .layer(cors);
@@ -174,7 +203,11 @@ async fn main() {
     let app = app
         .nest_service("/hotpaxel.v1.CompilerService", bridge_grpc!(grpc_compiler))
         .nest_service("/hotpaxel.v1.FontService", bridge_grpc!(grpc_font))
-        .nest_service("/hotpaxel.v1.SystemService", bridge_grpc!(grpc_system));
+        .nest_service("/hotpaxel.v1.SystemService", bridge_grpc!(grpc_system))
+        .layer(axum::middleware::from_fn_with_state(
+            authenticator.clone(),
+            auth::require_auth,
+        ));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], args.port));
     tracing::info!("HOTPaxel server listening on {}", addr);

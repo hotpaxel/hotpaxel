@@ -11,6 +11,7 @@ services:
       - STATIC_DIR=./public
       - DOCS_DIR=./docs
       - DISABLE_UI=false
+      - HOTPAXEL_AUTH_TOKEN=${HOTPAXEL_AUTH_TOKEN:-demo-secret-token}
     volumes:
       - ./apps/hot-editor/dist:/app/public:ro
       - ./apps/docs:/app/docs:ro
