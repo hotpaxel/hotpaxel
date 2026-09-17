@@ -154,15 +154,23 @@ fn main() {
                         match config.overwrite {
                             OverwriteStrategy::Always => true,
                             OverwriteStrategy::Never => {
-                                eprintln!("✗  Skipping '{}': File already exists (strategy: never).", out_path.display());
+                                eprintln!(
+                                    "✗  Skipping '{}': File already exists (strategy: never).",
+                                    out_path.display()
+                                );
                                 continue;
                             }
                             OverwriteStrategy::Ask => {
-                                print!("⚠  File '{}' already exists. Overwrite? [y/N] ", out_path.display());
+                                print!(
+                                    "⚠  File '{}' already exists. Overwrite? [y/N] ",
+                                    out_path.display()
+                                );
                                 use std::io::{self, Write};
                                 io::stdout().flush().unwrap();
                                 let mut input = String::new();
-                                io::stdin().read_line(&mut input).expect("Failed to read line");
+                                io::stdin()
+                                    .read_line(&mut input)
+                                    .expect("Failed to read line");
                                 if input.trim().to_lowercase() != "y" {
                                     println!("ℹ  Skipping '{}'.", out_path.display());
                                     continue;

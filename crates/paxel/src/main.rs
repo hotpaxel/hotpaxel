@@ -8,7 +8,7 @@ use crate::proto::hotpaxel::v1::font_service_server::FontServiceServer;
 use crate::proto::hotpaxel::v1::system_service_server::SystemServiceServer;
 use axum::{
     response::{IntoResponse, Redirect},
-    routing::{any, get, post},
+    routing::{get, post},
     Json, Router,
 };
 use clap::Parser;
@@ -58,7 +58,7 @@ async fn main() {
         service_fn(move |req: http::Request<axum::body::Body>| {
             let not_found_path = not_found_path.clone();
             let uri = req.uri().path().to_string();
-            
+
             async move {
                 if uri.starts_with("/api") {
                     // JSON 404 for API routes
@@ -80,7 +80,9 @@ async fn main() {
                             .header(http::header::CONTENT_TYPE, "text/html")
                             .body(axum::body::Body::from(bytes))
                             .unwrap()),
-                        Err(_) => Ok((http::StatusCode::NOT_FOUND, "404 Not Found").into_response()),
+                        Err(_) => {
+                            Ok((http::StatusCode::NOT_FOUND, "404 Not Found").into_response())
+                        }
                     }
                 }
             }
@@ -119,9 +121,12 @@ async fn main() {
         let docs_path = PathBuf::from(&args.docs_dir);
         if docs_path.exists() {
             tracing::info!("Serving API documentation from: {:?}", docs_path);
-            
+
             // Primary route /docs/ with fallback
-            app = app.nest_service("/docs/", ServeDir::new(&docs_path).fallback(common_fallback.clone()));
+            app = app.nest_service(
+                "/docs/",
+                ServeDir::new(&docs_path).fallback(common_fallback.clone()),
+            );
 
             // Aliases and Redirects
             app = app.route("/docs", get(|| async { Redirect::permanent("/docs/") }));
@@ -134,7 +139,7 @@ async fn main() {
     if !args.disable_ui && static_path.exists() {
         tracing::info!("Serving static files from: {:?}", static_path);
         let serve_dir = ServeDir::new(&static_path);
-        
+
         // Final Fallback: First try static files, then our custom 404 logic
         app = app.fallback_service(serve_dir.fallback(common_fallback));
     } else {
