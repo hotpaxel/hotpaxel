@@ -188,7 +188,7 @@ fn main() {
                 let mut tex = if from == "tex"
                     || (from == "auto" && input.extension().is_some_and(|e| e == "tex"))
                 {
-                    match fs::read_to_string(&input) {
+                    match fs::read_to_string(input) {
                         Ok(t) => t,
                         Err(_) => {
                             eprintln!("✗  Error: Failed to read input file '{}'", input.display());
@@ -196,7 +196,7 @@ fn main() {
                         }
                     }
                 } else {
-                    self::convert_to_tex(&input, &from)
+                    self::convert_to_tex(input, &from)
                 };
 
                 if !tex.contains("\\documentclass") {
