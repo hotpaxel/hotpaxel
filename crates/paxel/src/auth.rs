@@ -110,7 +110,7 @@ pub async fn auth_status(
     let authenticated = if !auth_required {
         true
     } else {
-        extract_token(&req).map_or(false, |token| auth.validate_token(&token))
+        extract_token(&req).is_some_and(|token| auth.validate_token(&token))
     };
 
     Json(AuthStatusResponse {
@@ -186,11 +186,10 @@ pub async fn require_auth(
     }
 
     // Protected API & RPC paths
-    let is_protected = path.starts_with("/api/")
-        || path.starts_with("/hotpaxel.v1.");
+    let is_protected = path.starts_with("/api/") || path.starts_with("/hotpaxel.v1.");
 
     if is_protected {
-        let is_valid = extract_token(&req).map_or(false, |token| auth.validate_token(&token));
+        let is_valid = extract_token(&req).is_some_and(|token| auth.validate_token(&token));
         if !is_valid {
             let error_json = json!({
                 "error": "Unauthorized",
@@ -257,7 +256,10 @@ mod tests {
     #[test]
     fn test_extract_token_from_cookie() {
         let req = Request::builder()
-            .header(header::COOKIE, "other=abc; hotpaxel_token=cookie-token-value; foo=bar")
+            .header(
+                header::COOKIE,
+                "other=abc; hotpaxel_token=cookie-token-value; foo=bar",
+            )
             .body(())
             .unwrap();
 
