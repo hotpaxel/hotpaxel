@@ -1,0 +1,21 @@
+apiVersion: ddang.makye.com/v1alpha1
+kind: AppSpec
+metadata:
+  name: hotpaxel
+spec:
+  apps:
+    - name: web
+      type: web
+      source:
+        dockerfile:
+          context: .
+          path: Dockerfile
+      run:
+        kind: service
+      runtime:
+        port: 8888
+        healthCheck:
+          path: /health
+      compute:
+        cpu: 1000m
+        memory: 2Gi
