@@ -26,7 +26,7 @@ COPY . .
 # Copy the built WASM package from stage 1
 COPY --from=rust-builder /app/crates/hot/pkg /app/crates/hot/pkg
 
-RUN bun install
+RUN bun install --ignore-scripts
 WORKDIR /app/apps/hot-editor
 RUN bun run build
 

@@ -6,7 +6,7 @@ mkdir -p gen/openapi
 
 echo "🚀 Generating OpenAPI specification from Protobuf..."
 # Run buf generate from the proto directory to ensure relative imports work correctly
-(cd proto && npx @bufbuild/buf generate --template ../buf.gen.yaml .)
+(cd proto && npx --yes @bufbuild/buf generate --template ../buf.gen.yaml .)
 
 # Check if openapi.swagger.json was generated (note the path relative to project root)
 if [ ! -f "gen/openapi/openapi.swagger.json" ]; then

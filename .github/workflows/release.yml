@@ -76,11 +76,20 @@ jobs:
         run: bun run build
         working-directory: apps/hot-editor
 
+      - name: Generate API docs
+        run: bun run gen:docs
+
       - name: Upload @hotpaxel/hot-editor artifact
         uses: actions/upload-artifact@v6
         with:
           name: hot-editor
           path: apps/hot-editor/dist/
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: docs
+          path: apps/docs/
 
   build-backend:
     name: Build Backend (${{ matrix.arch }})
@@ -117,7 +126,7 @@ jobs:
           tool: cargo-zigbuild
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev protobuf-compiler
 
       - name: Build backend
         run: cargo zigbuild --release --target ${{ matrix.target }}
@@ -163,11 +172,45 @@ jobs:
           fi
 
       - name: Publish to NPM (@hotpaxel/hot)
-        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VER=$(node -p "require('./package.json').version")
+
+          if npm view "${PKG_NAME}@${PKG_VER}" version >/dev/null 2>&1; then
+            echo "🔍 Version ${PKG_VER} already exists on NPM. Verifying package content integrity..."
+
+            TMP_DIR=$(mktemp -d)
+            trap "rm -rf \"$TMP_DIR\"" EXIT
+            mkdir -p "$TMP_DIR/local" "$TMP_DIR/remote" "$TMP_DIR/local-pkg" "$TMP_DIR/remote-pkg"
+
+            # 1. Package both remote and local tarballs
+            npm pack "${PKG_NAME}@${PKG_VER}" --pack-destination "$TMP_DIR/remote" >/dev/null 2>&1
+            npm pack --pack-destination "$TMP_DIR/local" >/dev/null 2>&1
+
+            # 2. Extract tarballs using wildcard pattern
+            tar -xzf "$TMP_DIR/local"/*.tgz -C "$TMP_DIR/local-pkg"
+            tar -xzf "$TMP_DIR/remote"/*.tgz -C "$TMP_DIR/remote-pkg"
+
+            # 3. Byte-level comparison of pure package contents
+            if git diff --no-index --quiet "$TMP_DIR/remote-pkg/package" "$TMP_DIR/local-pkg/package"; then
+              echo "✅ Content matches published package perfectly. Skipping publish."
+              exit 0
+            else
+              echo "❌ [FATAL] Content mismatch detected for ${PKG_NAME}@${PKG_VER}!"
+              echo "The version is already published to NPM with DIFFERENT contents."
+              echo "Please bump the version (semver) to publish new changes."
+              git diff --no-index --stat "$TMP_DIR/remote-pkg/package" "$TMP_DIR/local-pkg/package"
+              exit 1
+            fi
+          else
+            echo "🚀 Publishing ${PKG_NAME}@${PKG_VER} to NPM..."
+            npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+          fi
         working-directory: crates/hot/pkg
 
   docker-publish:
     name: Docker Publish (Hotpaxel - Unified)
+    needs: [build-editor, build-backend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -176,6 +219,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Download amd64 backend artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: paxel-amd64
+          path: artifacts/amd64
+
+      - name: Download arm64 backend artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: paxel-arm64
+          path: artifacts/arm64
+
+      - name: Download @hotpaxel/hot-editor artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: hot-editor
+          path: public
+
+      - name: Download docs artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: docs
+          path: docs
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -203,7 +270,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile
+          file: .docker/release.Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
@@ -295,6 +362,7 @@ jobs:
           files: |
             paxel-linux-amd64-${{ github.ref_name }}.zip
             paxel-linux-arm64-${{ github.ref_name }}.zip
+            hot-editor-${{ github.ref_name }}.zip
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')

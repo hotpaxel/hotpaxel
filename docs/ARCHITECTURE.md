@@ -21,4 +21,4 @@ This eliminates the need for Nginx and simplifies Docker orchestration.
 ---
 
 ### Quick Links
-**[Back to README](../README.md)** | **[Engineering Guide](./engineering_guide.md)** | **[API Reference](./api.md)** | **[UI/SDK Contract](./ui_contract.md)**
+**[Back to README](../README.md)** | **[Engineering Guide](./ENGINEERING_GUIDE.md)** | **[API Reference (Proto)](../proto)** | **[UI/SDK Contract](./UI_CONTRACT.md)**
