@@ -172,7 +172,40 @@ jobs:
           fi
 
       - name: Publish to NPM (@hotpaxel/hot)
-        run: npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VER=$(node -p "require('./package.json').version")
+
+          if npm view "${PKG_NAME}@${PKG_VER}" version >/dev/null 2>&1; then
+            echo "🔍 Version ${PKG_VER} already exists on NPM. Verifying package content integrity..."
+
+            TMP_DIR=$(mktemp -d)
+            trap "rm -rf \"$TMP_DIR\"" EXIT
+            mkdir -p "$TMP_DIR/local" "$TMP_DIR/remote" "$TMP_DIR/local-pkg" "$TMP_DIR/remote-pkg"
+
+            # 1. Package both remote and local tarballs
+            REMOTE_TAR=$(npm pack "${PKG_NAME}@${PKG_VER}" --pack-destination "$TMP_DIR/remote" 2>/dev/null | tail -n 1)
+            LOCAL_TAR=$(npm pack --pack-destination "$TMP_DIR/local" 2>/dev/null | tail -n 1)
+
+            # 2. Extract tarballs
+            tar -xzf "$TMP_DIR/local/$LOCAL_TAR" -C "$TMP_DIR/local-pkg"
+            tar -xzf "$TMP_DIR/remote/$REMOTE_TAR" -C "$TMP_DIR/remote-pkg"
+
+            # 3. Byte-level comparison of pure package contents
+            if git diff --no-index --quiet "$TMP_DIR/remote-pkg/package" "$TMP_DIR/local-pkg/package"; then
+              echo "✅ Content matches published package perfectly. Skipping publish."
+              exit 0
+            else
+              echo "❌ [FATAL] Content mismatch detected for ${PKG_NAME}@${PKG_VER}!"
+              echo "The version is already published to NPM with DIFFERENT contents."
+              echo "Please bump the version (semver) to publish new changes."
+              git diff --no-index --stat "$TMP_DIR/remote-pkg/package" "$TMP_DIR/local-pkg/package"
+              exit 1
+            fi
+          else
+            echo "🚀 Publishing ${PKG_NAME}@${PKG_VER} to NPM..."
+            npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+          fi
         working-directory: crates/hot/pkg
 
   docker-publish:
@@ -329,6 +362,7 @@ jobs:
           files: |
             paxel-linux-amd64-${{ github.ref_name }}.zip
             paxel-linux-arm64-${{ github.ref_name }}.zip
+            hot-editor-${{ github.ref_name }}.zip
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')
