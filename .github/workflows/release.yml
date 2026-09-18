@@ -184,12 +184,12 @@ jobs:
             mkdir -p "$TMP_DIR/local" "$TMP_DIR/remote" "$TMP_DIR/local-pkg" "$TMP_DIR/remote-pkg"
 
             # 1. Package both remote and local tarballs
-            REMOTE_TAR=$(npm pack "${PKG_NAME}@${PKG_VER}" --pack-destination "$TMP_DIR/remote" 2>/dev/null | tail -n 1)
-            LOCAL_TAR=$(npm pack --pack-destination "$TMP_DIR/local" 2>/dev/null | tail -n 1)
+            npm pack "${PKG_NAME}@${PKG_VER}" --pack-destination "$TMP_DIR/remote" >/dev/null 2>&1
+            npm pack --pack-destination "$TMP_DIR/local" >/dev/null 2>&1
 
-            # 2. Extract tarballs
-            tar -xzf "$TMP_DIR/local/$LOCAL_TAR" -C "$TMP_DIR/local-pkg"
-            tar -xzf "$TMP_DIR/remote/$REMOTE_TAR" -C "$TMP_DIR/remote-pkg"
+            # 2. Extract tarballs using wildcard pattern
+            tar -xzf "$TMP_DIR/local"/*.tgz -C "$TMP_DIR/local-pkg"
+            tar -xzf "$TMP_DIR/remote"/*.tgz -C "$TMP_DIR/remote-pkg"
 
             # 3. Byte-level comparison of pure package contents
             if git diff --no-index --quiet "$TMP_DIR/remote-pkg/package" "$TMP_DIR/local-pkg/package"; then
